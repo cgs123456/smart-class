@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cgs.smartclass.mapper.AiAvatarMapper">
+
+    <resultMap id="BaseResultMap" type="com.cgs.smartclass.model.entity.AiAvatar">
+            <id property="id" column="id" />
+            <result property="name" column="name" />
+            <result property="baseUrl" column="baseUrl" />
+            <result property="description" column="description" />
+            <result property="avatarImgUrl" column="avatarImgUrl" />
+            <result property="avatarAuth" column="avatarAuth" />
+            <result property="tags" column="tags" />
+            <result property="personality" column="personality" />
+            <result property="abilities" column="abilities" />
+            <result property="isPublic" column="isPublic" />
+            <result property="status" column="status" />
+            <result property="usageCount" column="usageCount" />
+            <result property="rating" column="rating" />
+            <result property="ratingCount" column="ratingCount" />
+            <result property="creatorId" column="creatorId" />
+            <result property="sort" column="sort" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,baseUrl,description,avatarImgUrl,avatarAuth,
+        tags,personality,abilities,isPublic,status,
+        usageCount,rating,ratingCount,creatorId,sort,
+        createTime,updateTime,isDelete
+    </sql>
+</mapper>

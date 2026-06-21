@@ -1,0 +1,52 @@
+# 公共配置文件
+spring:
+  application:
+    name: smartclass-backend-pay
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+  # 默认 dev 环境
+  profiles:
+    active: dev
+  # 支持 swagger3
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  # session 配置
+  session:
+    store-type: redis
+    # 30 天过期
+    timeout: 2592000
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://110.42.45.244:3307/smart_class
+    username: smartclass
+    password: possible1.
+  # Redis 配置
+  data:
+    redis:
+      database: 0
+      host: 110.42.45.236
+      port: 6379
+      timeout: 5000
+      password: redis_ckJ4cM
+server:
+  address: 0.0.0.0
+  port: 10011
+  servlet:
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
+        path: "/"
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete
+      logic-delete-value: 1
+      logic-not-delete-value: 0

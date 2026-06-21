@@ -1,0 +1,51 @@
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Frontend
+**/node_modules/
+**/dist/
+**/.cache/
+**/src/.umi/
+**/src/.umi-production/
+**/.umi/
+**/.umi-production/
+
+# Env (sensitive)
+.env
+.env.local
+.env.*.local
+
+# Build output
+**/target/
+**/build/
+**/out/
+
+# Umi/Ant Design Pro cache
+**/types/cache/
+
+# Temp files
+*.tmp
+*.bak
+*.pid

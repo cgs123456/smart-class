@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # 应用服务
+  smartclass-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartclass-app
+    ports:
+      - "8101:8101"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/smart_class?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+    depends_on:
+      - mysql
+      - redis
+      - elasticsearch
+    networks:
+      - smartclass-network
+    restart: always
+
+  # MySQL服务
+  mysql:
+    image: mysql:8.0
+    container_name: smartclass-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=smart_class
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - smartclass-network
+    restart: always
+
+  # Redis服务
+  redis:
+    image: redis:6.2
+    container_name: smartclass-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - smartclass-network
+    restart: always
+
+  # Elasticsearch服务
+  elasticsearch:
+    image: elasticsearch:7.17.4
+    container_name: smartclass-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - smartclass-network
+    restart: always
+
+# 数据卷
+volumes:
+  mysql-data:
+  redis-data:
+  elasticsearch-data:
+
+# 网络配置
+networks:
+  smartclass-network:
+    driver: bridge

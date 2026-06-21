@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  # 前端应用
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartclass-manage-frontend
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      # 挂载nginx配置，便于动态修改
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    environment:
+      # 后端API地址，根据实际环境修改
+      - API_URL=http://backend.smartclass.cgs.cn:8081
+    networks:
+      - smartclass-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  smartclass-network:
+    driver: bridge
