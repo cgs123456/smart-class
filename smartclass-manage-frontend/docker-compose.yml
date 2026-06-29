@@ -10,16 +10,19 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       # 挂载nginx配置，便于动态修改
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      # 挂载SSL证书（只读），需在宿主机 ./ssl 目录放置 tls.crt 与 tls.key
+      - ./ssl:/etc/nginx/ssl:ro
     environment:
-      # 后端API地址，根据实际环境修改
-      - API_URL=http://backend.smartclass.cgs.cn:8081
+      # 后端API地址，已切换为 HTTPS
+      - API_URL=https://backend.smartclass.cgs.cn
     networks:
       - smartclass-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD", "wget", "--no-check-certificate", "--spider", "-q", "https://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3

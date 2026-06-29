@@ -60,11 +60,21 @@ public interface PaymentOrderService extends IService<PaymentOrder> {
     PaymentOrderVO getOrderById(Long userId, Long id);
 
     /**
-     * 支付回调处理
+     * 支付回调处理（未验签，仅保留兼容，不再执行业务）
      *
      * @param paymentChannel 支付渠道
      * @param params         回调参数
      * @return 是否成功
      */
     boolean handleCallback(String paymentChannel, Map<String, String> params);
+
+    /**
+     * 支付回调处理（带签名验证）
+     *
+     * @param channel 支付渠道
+     * @param params  回调参数
+     * @param headers 回调请求头（用于提取 X-Wechatpay-* / 支付宝相关头）
+     * @return 是否成功
+     */
+    boolean handleCallbackWithVerify(String channel, Map<String, String> params, Map<String, String> headers);
 }

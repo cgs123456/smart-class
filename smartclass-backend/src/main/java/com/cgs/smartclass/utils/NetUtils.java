@@ -2,10 +2,12 @@ package com.cgs.smartclass.utils;
 
 import java.net.InetAddress;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 网络工具类
 */
+@Slf4j
 public class NetUtils {
 
     /**
@@ -30,7 +32,7 @@ public class NetUtils {
                 try {
                     inet = InetAddress.getLocalHost();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.warn("获取本机 IP 失败", e);
                 }
                 if (inet != null) {
                     ip = inet.getHostAddress();

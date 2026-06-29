@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, DatePicker, Radio, Typography, Statistic, Divider } from 'antd';
+import { Card, Row, Col, DatePicker, Radio, Typography, Statistic, Divider, Alert } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import ReactECharts from 'echarts-for-react';
 import { RobotOutlined, LineChartOutlined, BarChartOutlined, PieChartOutlined, UserOutlined, MessageOutlined, ClockCircleOutlined } from '@ant-design/icons';
@@ -20,6 +20,7 @@ const AiAvatarStatistics: React.FC = () => {
   // 图表类型
   const [chartType, setChartType] = useState<string>('usage');
 
+  // 警告：以下为模拟数据，上线前必须对接后端接口 aiAvatarController
   // 用于生成模拟数据的函数
   const generateMockData = (type: string, range: string) => {
     const days = range === 'week' ? 7 : (range === 'month' ? 30 : 365);
@@ -225,6 +226,13 @@ const AiAvatarStatistics: React.FC = () => {
       }}
     >
       <div className="ai-avatar-statistics">
+        <Alert
+          message="数据为模拟展示"
+          description="当前页面展示的是模拟数据，正式上线前需对接后端 aiAvatarController 统计接口。"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
         <Card>
           <Row gutter={[16, 16]} className="stat-summary">
             {totalStats.map((stat, index) => (

@@ -19,6 +19,22 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>com.cgs</groupId>
+            <artifactId>smartclass-backend-model</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.cgs</groupId>
+            <artifactId>smartclass-backend-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <!-- P2-5: 引入 service-client 以提供 @EnableFeignClients 注解与 Feign 接口（与其他业务服务保持一致） -->
+        <dependency>
+            <groupId>com.cgs</groupId>
+            <artifactId>smartclass-backend-service-client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

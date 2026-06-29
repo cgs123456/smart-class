@@ -39,7 +39,7 @@ public class UserAiAvatarServiceImpl extends ServiceImpl<UserAiAvatarMapper, Use
 
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean favoriteAiAvatar(Long userId, Long aiAvatarId, Integer isFavorite) {
         // 查询是否已存在记录
         QueryWrapper<UserAiAvatar> queryWrapper = new QueryWrapper<>();
@@ -64,7 +64,7 @@ public class UserAiAvatarServiceImpl extends ServiceImpl<UserAiAvatarMapper, Use
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean useAiAvatar(Long userId, Long aiAvatarId) {
         // 查询是否已存在记录
         QueryWrapper<UserAiAvatar> queryWrapper = new QueryWrapper<>();
@@ -101,7 +101,7 @@ public class UserAiAvatarServiceImpl extends ServiceImpl<UserAiAvatarMapper, Use
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean rateAiAvatar(Long userId, Long aiAvatarId, BigDecimal rating, String feedback) {
         // 查询是否已存在记录
         QueryWrapper<UserAiAvatar> queryWrapper = new QueryWrapper<>();

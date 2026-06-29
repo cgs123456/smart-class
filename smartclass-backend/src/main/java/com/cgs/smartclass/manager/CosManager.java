@@ -11,7 +11,9 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import jakarta.annotation.Resource;
 
 import com.cgs.smartclass.common.ErrorCode;
@@ -39,7 +41,17 @@ public class CosManager {
     private COSClient cosClient;
     
     // 创建一个线程池，用于处理大文件上传
-    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+    // 自定义命名线程、有界队列与拒绝策略，防止任务堆积导致 OOM
+    private final ExecutorService executorService = new ThreadPoolExecutor(
+            5, 10, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(100),
+            r -> {
+                Thread t = new Thread(r, "cos-upload-" + System.currentTimeMillis());
+                t.setDaemon(true);
+                return t;
+            },
+            new ThreadPoolExecutor.CallerRunsPolicy()
+    );
 
     /**
      * 获取COS访问地址

@@ -19,5 +19,13 @@ public @interface AuthCheck {
      */
     String mustRole() default "";
 
+    /**
+     * 必须有其中任一角色（多角色校验，向后兼容 mustRole）
+     * 当 mustRoles 不为空时优先使用多角色校验，忽略 mustRole
+     *
+     * @return
+     */
+    String[] mustRoles() default {};
+
 }
 

@@ -1,4 +1,4 @@
-﻿import { BACKEND_HOST_LOCAL, BACKEND_HOST_PROD } from '@/constants';
+import { BACKEND_HOST_LOCAL, BACKEND_HOST_PROD } from '@/constants';
 import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
 
@@ -25,6 +25,13 @@ export const requestConfig: RequestConfig = {
   requestInterceptors: [
     (config: RequestOptions) => {
       // 拦截请求配置，进行个性化处理。
+      // CSRF 防护：从 Cookie 读取 csrfToken 并写入请求头（双重提交防护）
+      // 即使采用 SameSite Cookie 策略，仍保留此防护作为纵深防御
+      const csrfToken = document.cookie
+        .match(/csrfToken=([^;]+)/)?.[1];
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
       return config;
     },
   ],

@@ -1,6 +1,6 @@
 package com.cgs.smartclass.netty;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.cgs.smartclass.constant.WebSocketMessageType;
 import com.cgs.smartclass.model.dto.websocket.WebSocketMessage;
 import com.cgs.smartclass.service.ChatMessageService;
@@ -95,7 +95,7 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<TextWeb
         } catch (Exception e) {
             log.error("处理WebSocket消息失败", e);
             // 向客户端发送错误信息
-            sendErrorMessage(ctx, "消息处理失败: " + e.getMessage());
+            sendErrorMessage(ctx, "系统繁忙，请稍后重试");
         }
     }
     
@@ -141,7 +141,7 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<TextWeb
             }
         } catch (Exception e) {
             log.error("处理聊天消息失败", e);
-            sendErrorMessage(ctx, "处理聊天消息失败: " + e.getMessage());
+            sendErrorMessage(ctx, "系统繁忙，请稍后重试");
         }
     }
     
@@ -208,7 +208,7 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<TextWeb
             }
         } catch (Exception e) {
             log.error("处理命令消息失败", e);
-            response.setContent("命令执行失败: " + e.getMessage());
+            response.setContent("系统繁忙，请稍后重试");
         }
         
         ctx.channel().writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(response)));
@@ -300,7 +300,7 @@ public class WebSocketMessageHandler extends SimpleChannelInboundHandler<TextWeb
             ctx.channel().writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(response)));
         } catch (Exception e) {
             log.error("处理已读状态消息失败", e);
-            sendErrorMessage(ctx, "处理已读状态消息失败: " + e.getMessage());
+            sendErrorMessage(ctx, "系统繁忙，请稍后重试");
         }
     }
     

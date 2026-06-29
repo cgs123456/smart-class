@@ -22,7 +22,10 @@ public class MyBatisPlusConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 分页插件
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
+        // 限制单页最大记录数，防止恶意拉取全表数据
+        paginationInnerInterceptor.setMaxLimit(100L);
+        interceptor.addInnerInterceptor(paginationInnerInterceptor);
         return interceptor;
     }
 }

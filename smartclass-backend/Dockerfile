@@ -4,10 +4,8 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 # 工作目录
 WORKDIR /app
 
-# 设置Maven镜像源为阿里云，加速依赖下载（可选）
-COPY settings.xml /usr/share/maven/conf/
-
 # 首先复制 pom.xml 并下载依赖，利用 Docker 缓存机制
+# 注意：原 settings.xml 不存在于仓库中已移除该 COPY，避免 Docker 构建失败
 COPY pom.xml mvnw mvnw.cmd ./
 COPY .mvn ./.mvn
 RUN mvn dependency:go-offline -B

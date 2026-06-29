@@ -31,8 +31,24 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 RUN rm -rf /var/cache/apk/* && \
     rm -rf /tmp/*
 
-# 暴露端口
+# 创建非 root 用户并切换（生产安全）
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /usr/share/nginx/html && \
+    chown -R appuser:appgroup /etc/nginx/conf.d && \
+    mkdir -p /etc/nginx/ssl && \
+    chown -R appuser:appgroup /etc/nginx/ssl && \
+    chown -R appuser:appgroup /var/cache/nginx && \
+    chown -R appuser:appgroup /var/run
+
+USER appuser
+
+# 暴露端口（同时支持 HTTP 跳转与 HTTPS 主服务）
 EXPOSE 80
+EXPOSE 443
+
+# 健康检查（探测 HTTPS 主服务）
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget --no-check-certificate --spider -q https://localhost/health || exit 1
 
 # 启动Nginx
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]

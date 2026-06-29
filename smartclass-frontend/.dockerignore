@@ -1,0 +1,31 @@
+node_modules
+dist
+.git
+.gitignore
+
+# Android 构建产物
+android/app/build
+android/app/release
+android/.gradle
+android/cordova-plugin-*
+android/capacitor-cordova-android-plugins/build
+
+# IDE
+.vscode
+.idea
+
+# 日志
+*.log
+npm-debug.log*
+
+# 本地环境变量（含密钥）
+.env.local
+.env.*.local
+
+# 测试
+coverage
+.nyc_output
+
+# 临时文件
+.tmp
+.cache

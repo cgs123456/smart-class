@@ -1,0 +1,10 @@
+# 开发环境配置文件
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/smart_class
+    username: root
+    password: ${MYSQL_PASSWORD:123456}
+# 接口文档（开发环境开启）
+knife4j:
+  enable: true

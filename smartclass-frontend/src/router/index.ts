@@ -5,17 +5,6 @@ import {
   NavigationGuardNext,
   RouteLocationNormalized,
 } from 'vue-router';
-import Home from '../views/home/Home.vue';
-import Courses from '../views/course/Courses.vue';
-import Profile from '../views/my-profile/Profile.vue';
-import Login from '../views/user/Login.vue';
-import Register from '../views/user/Register.vue';
-import Circle from '../views/circle/Circle.vue';
-import { AIChatDetail, ChatContainer, UserChatDetail } from '../views/chat';
-import AvatarCropper from '../views/my-profile/settings/AvatarCropper.vue';
-import NoticeList from '../views/home/NoticeList.vue';
-import PostDetail from '../views/circle/PostDetail.vue';
-import UserProfile from '../views/user/UserProfile.vue';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -28,7 +17,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'login',
-    component: Login,
+    component: () => import('../views/user/Login.vue'),
     meta: {
       requiresAuth: false,
     },
@@ -36,7 +25,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/register',
     name: 'register',
-    component: Register,
+    component: () => import('../views/user/Register.vue'),
     meta: {
       requiresAuth: false,
     },
@@ -46,7 +35,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'home',
-    component: Home,
+    component: () => import('../views/home/Home.vue'),
     meta: {
       requiresAuth: true,
     },
@@ -62,7 +51,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/notices',
     name: 'notices',
-    component: NoticeList,
+    component: () => import('../views/home/NoticeList.vue'),
     meta: {
       requiresAuth: true,
     },
@@ -72,7 +61,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/chat',
     name: 'chat',
-    component: ChatContainer,
+    component: () => import('../views/chat').then(m => m.ChatContainer),
     meta: {
       requiresAuth: true,
     },
@@ -80,7 +69,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/chat/detail',
     name: 'chat-detail',
-    component: AIChatDetail,
+    component: () => import('../views/chat').then(m => m.AIChatDetail),
     meta: {
       requiresAuth: true,
     },
@@ -88,7 +77,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/chat/detail/:assistantId',
     name: 'chat-detail-with-assistant',
-    component: AIChatDetail,
+    component: () => import('../views/chat').then(m => m.AIChatDetail),
     meta: {
       requiresAuth: true,
     },
@@ -96,7 +85,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/userchat/:userId',
     name: 'user-chat-detail',
-    component: UserChatDetail,
+    component: () => import('../views/chat').then(m => m.UserChatDetail),
     meta: {
       requiresAuth: true,
     },
@@ -145,7 +134,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/courses',
     name: 'courses',
-    component: Courses,
+    component: () => import('../views/course/Courses.vue'),
     meta: {
       requiresAuth: true,
     },
@@ -195,7 +184,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/profile',
     name: 'profile',
-    component: Profile,
+    component: () => import('../views/my-profile/Profile.vue'),
     meta: {
       requiresAuth: true,
     },
@@ -259,7 +248,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/profile/settings/avatar-cropper',
     name: 'avatar-cropper',
-    component: AvatarCropper,
+    component: () => import('../views/my-profile/settings/AvatarCropper.vue'),
     meta: {
       requiresAuth: true,
       title: '裁剪头像',
@@ -306,7 +295,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/circle',
     name: 'circle',
-    component: Circle,
+    component: () => import('../views/circle/Circle.vue'),
     meta: {
       requiresAuth: true,
     },
@@ -314,7 +303,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/circle/post/:id',
     name: 'post-detail',
-    component: PostDetail,
+    component: () => import('../views/circle/PostDetail.vue'),
     meta: {
       requiresAuth: true,
     },
@@ -332,7 +321,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/users/:id',
     name: 'user-profile',
-    component: UserProfile,
+    component: () => import('../views/user/UserProfile.vue'),
     meta: {
       requiresAuth: true,
     },
@@ -374,6 +363,10 @@ router.beforeEach(
     const userStore = useUserStore();
 
     // 优先检查 store 中的登录状态（响应式），其次检查 localStorage
+    // 注意：当前依赖"头像是否为默认值"作为登录态信号之一，逻辑相对脆弱。
+    // 后续可优化为独立的 isAuthenticated 判断逻辑，例如：
+    //   const isLoggedIn = localStorage.getItem('userInfo') !== null;
+    // 现暂保留头像判断以避免破坏现有功能。
     const isLoggedIn = userStore.getUserAvatar() !== userStore.DEFAULT_USER_AVATAR
       || localStorage.getItem('userInfo') !== null;
 

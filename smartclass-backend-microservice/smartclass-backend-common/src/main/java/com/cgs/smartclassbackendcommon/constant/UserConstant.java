@@ -27,7 +27,7 @@ public interface UserConstant {
      */
     String BAN_ROLE = "ban";
 
+    // 原硬编码 SALT="yupi" 已废弃，密码加密迁移至 BCrypt（user 服务 PasswordEncoderConfig）
 
-    String SALT = "yupi";
     // endregion
 }

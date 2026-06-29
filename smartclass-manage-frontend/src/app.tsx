@@ -1,7 +1,9 @@
+import ErrorBoundary from '@/components/ErrorBoundary';
 import Footer from '@/components/Footer';
 import { getLoginUserUsingGet } from '@/services/backend/userController';
 import type { RunTimeLayoutConfig } from '@umijs/max';
 import { history } from '@umijs/max';
+import React from 'react';
 import defaultSettings from '../config/defaultSettings';
 import { AvatarDropdown } from './components/RightContent/AvatarDropdown';
 import { requestConfig } from './requestConfig';
@@ -21,7 +23,7 @@ export async function getInitialState(): Promise<InitialState> {
     try {
       const res = await getLoginUserUsingGet();
       initialState.currentUser = res.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 如果未登录
     }
 
@@ -62,3 +64,12 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const request = requestConfig;
+
+/**
+ * @name 全局根容器
+ * @description 包裹 ErrorBoundary，捕获子组件渲染过程中的异常，避免白屏
+ * @doc https://umijs.org/docs/max/api#rootcontainer
+ */
+export function rootContainer(container: React.ReactNode) {
+  return <ErrorBoundary>{container}</ErrorBoundary>;
+}

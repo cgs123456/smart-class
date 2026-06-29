@@ -148,24 +148,24 @@ onMounted(async () => {
 
 <style>
 /* 全局样式 */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+/* 优先使用系统字体，避免 Google Fonts CDN 在国内访问受阻 */
+/* @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap'); */
 
 body {
   margin: 0;
   padding: 0;
   font-family:
-    'Noto Sans SC',
     -apple-system,
     BlinkMacSystemFont,
+    'PingFang SC',
+    'Microsoft YaHei',
     'Helvetica Neue',
     Helvetica,
     Segoe UI,
     Arial,
     Roboto,
-    'PingFang SC',
     'miui',
     'Hiragino Sans GB',
-    'Microsoft Yahei',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -240,7 +240,7 @@ body {
 /* van-tabbar-item__text 样式 */
 .van-tabbar-item__text {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
   font-size: 14px;
   transition: all 0.3s ease;
 }
@@ -299,7 +299,7 @@ body {
 /* 组件标题样式 */
 .van-cell__title {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 统一van-cell样式 */
@@ -341,25 +341,25 @@ body {
 /* 卡片标题样式 */
 .van-cell-group__title {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 标签页标题样式 */
 .van-tab {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 按钮文字样式 */
 .van-button__text {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 更多链接样式 */
 .more-link {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 卡片内标题样式 */
@@ -367,13 +367,13 @@ h2,
 h3,
 h4 {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 公告标题样式 */
 .van-cell__title span {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 全局字体大小控制 */
@@ -480,7 +480,7 @@ p {
 .course-title,
 .article-title {
   font-weight: 700 !important;
-  font-family: 'Noto Sans SC', sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 确保课程和文章组件的字体大小正确 */

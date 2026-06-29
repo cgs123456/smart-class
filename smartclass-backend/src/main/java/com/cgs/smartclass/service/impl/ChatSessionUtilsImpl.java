@@ -1,6 +1,6 @@
 package com.cgs.smartclass.service.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.cgs.smartclass.common.ErrorCode;
 import com.cgs.smartclass.constant.PrivateChatSessionConstant;

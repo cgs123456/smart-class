@@ -37,7 +37,17 @@ export const useUserStore = defineStore('user', () => {
       return userInfo.value;
     } catch (error) {
       console.error('Failed to fetch current user', error);
-      // 发生异常时，保留现有用户状态，返回当前的userInfo
+      const err = error as { status?: number; response?: { status?: number } };
+      const status = err?.status ?? err?.response?.status;
+      if (status === 401 || status === 403) {
+        userInfo.value = null;
+        localStorage.removeItem('userInfo');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return null;
+      }
+      // 其他异常时，保留现有用户状态，返回当前的userInfo
       return userInfo.value;
     }
   };

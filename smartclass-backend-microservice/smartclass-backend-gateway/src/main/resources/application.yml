@@ -1,7 +1,19 @@
 server:
   port: 8101
 
+# P1-1: Nacos 配置中心说明
+# 当前架构仅使用 Nacos 作为服务发现注册中心，未启用配置中心。
+# 如需启用，可在各服务 application.yml 添加 spring.cloud.nacos.config.* 配置，
+# 并将 application.yml 中可变配置迁移至 Nacos 维护（建议保持 bootstrap 加载顺序）。
+# 保守起见暂不强制修改所有服务，避免破坏现有架构。
+
+# P1-8: 网关限流说明
+# 当前网关未配置限流。建议后续接入 Sentinel 或 Spring Cloud Gateway RequestRateLimiter，
+# 通过配置中心动态调整限流规则；当前保守处理，不强制实现。
+
 spring:
+  application:
+    name: smartclass-backend-gateway
   cloud:
     gateway:
       routes:
@@ -28,7 +40,7 @@ spring:
 
         - id: smartclass-backend-dailyarticle
           uri: lb://smartclass-backend-dailyarticle
-          predicates:     
+          predicates:
             - Path=/api/dailyarticle/**
           filters:
             - StripPrefix=2
@@ -97,15 +109,24 @@ spring:
             - StripPrefix=2
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848
-  application:
-    name: smartclass-backend-gateway
+        # P1-6: 通过环境变量注入，避免硬编码
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
 
-# Knife4j 文档聚合配置
+# JWT 网关校验配置（必须与 user 服务的 jwt.secret 保持一致）
+jwt:
+  secret: ${JWT_SECRET}
+  header: Authorization
+  token-prefix: "Bearer "
+
+# CORS 允许的来源（生产环境必须显式配置）
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+# P1-16: Knife4j 文档聚合配置——生产环境必须通过 KNIFE4J_ENABLE=false 关闭，避免接口文档暴露
 knife4j:
   gateway:
-    # 是否开启网关聚合模式
-    enabled: true
+    # 是否开启网关聚合模式（生产环境置为 false）
+    enabled: ${KNIFE4J_ENABLE:false}
     # 排序规则(tag/operation排序)
     tags-sorter: order
     operations-sorter: order
@@ -113,8 +134,8 @@ knife4j:
     strategy: discover
     # 服务发现模式的配置
     discover:
-      # 开启服务发现
-      enabled: true
+      # 开启服务发现（与 gateway.enabled 联动，生产环境关闭）
+      enabled: ${KNIFE4J_ENABLE:false}
       # 指定版本号(openapi3)
       version: openapi3
       # 需要排除的微服务(排除网关服务本身)
@@ -164,5 +185,20 @@ knife4j:
         smartclass-backend-pay:
           order: 13
           group-name: 支付服务
+
+# P1-16: 文档白名单开关（生产环境置为 false，控制文档相关路径放行）
+security:
+  whitelist:
+    doc: ${KNIFE4J_ENABLE:false}
+
+# P1-4: Actuator 监控端点（仅暴露 health/info，避免敏感信息泄漏）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
 
 

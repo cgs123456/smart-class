@@ -18,9 +18,12 @@ import java.util.List;
 import static com.cgs.smartclassbackendcommon.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
- * 用户服务
+ * 用户服务 Feign 客户端
+ *
+ * <p>注意：name 必须与 user 服务在 Nacos 注册的服务名一致，即 {@code smartclass-backend-user}。
+ * path 指向 user 服务内部接口前缀 {@code /api/user/inner}（StripPrefix=2 后实际路径为 /inner）。</p>
 */
-@FeignClient(name = "smartclass-user-service", path = "/api/user/inner")
+@FeignClient(name = "smartclass-backend-user", path = "/inner")
 public interface UserFeignClient {
 
     /**

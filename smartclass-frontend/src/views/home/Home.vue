@@ -506,8 +506,13 @@ const actions = ref<Action[]>([
 
 // 搜索处理
 const onSearch = (text: string) => {
-  // 这里添加实际的搜索逻辑
-  // TODO: 实现搜索功能
+  const keyword = text.trim();
+  if (!keyword) {
+    showToast('请输入搜索内容');
+    return;
+  }
+  // 跳转到独立搜索页，由搜索页承载实际搜索逻辑
+  router.push({ path: '/search', query: { keyword } });
 };
 
 // 开始对话

@@ -1,4 +1,4 @@
-﻿import type { RequestOptions } from '@@/plugin-request/request';
+import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
 import { message, notification } from 'antd';
 
@@ -63,7 +63,8 @@ export const errorConfig: RequestConfig = {
               });
               break;
             case ErrorShowType.REDIRECT:
-              // TODO: redirect
+              // 重定向到登录页，避免业务异常导致用户卡在错误页面
+              window.location.href = '/user/login';
               break;
             default:
               message.error(errorMessage);
@@ -89,8 +90,10 @@ export const errorConfig: RequestConfig = {
   requestInterceptors: [
     (config: RequestOptions) => {
       // 拦截请求配置，进行个性化处理。
-      const url = config?.url?.concat('?token = 123');
-      return { ...config, url };
+      // 注意：项目采用 Session/Cookie 鉴权（withCredentials: true），
+      // 不需要在 URL 上拼接 token。原 `?token = 123` 为硬编码伪造令牌，
+      // 已移除以避免伪造身份通过后端校验。
+      return config;
     },
   ],
 

@@ -1,0 +1,383 @@
+# P1-5: 智云星课微服务编排框架
+# 用法：docker compose up -d <服务名> 或 docker compose up -d 启动全部
+# 注意：本编排为框架示例，实际使用前请根据环境调整镜像版本、网络、卷与端口。
+# 各服务默认使用内置 profile=prod，敏感配置通过环境变量注入（参考 .env 文件）。
+
+version: "3.8"
+
+services:
+  # ---------- 基础设施 ----------
+  mysql:
+    image: mysql:8.0
+    container_name: smartclass-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: smart_class
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - smartclass-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: smartclass-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - smartclass-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: smartclass-nacos
+    environment:
+      MODE: standalone
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    networks:
+      - smartclass-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  elasticsearch:
+    image: elasticsearch:8.5.3
+    container_name: smartclass-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - smartclass-net
+
+  # ---------- 业务微服务 ----------
+  # 通用模板：构建上下文为仓库根目录，使用根 Dockerfile，通过 SERVICE_DIR 指定服务。
+  # 各服务通过 NACOS_ADDR / REDIS_HOST / MYSQL_URL 等环境变量对接基础设施。
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-gateway
+    image: smartclass/gateway:latest
+    container_name: smartclass-gateway
+    depends_on:
+      - nacos
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+      - JWT_SECRET=${JWT_SECRET}
+      - KNIFE4J_ENABLE=false
+    ports:
+      - "8101:8101"
+    networks:
+      - smartclass-net
+
+  user:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-user
+    image: smartclass/user:latest
+    container_name: smartclass-user
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET}
+      - WX_REDIS_HOST=redis
+    ports:
+      - "10001:10001"
+    networks:
+      - smartclass-net
+
+  announcement:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-announcement
+    image: smartclass/announcement:latest
+    container_name: smartclass-announcement
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: &service-env
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    ports:
+      - "10002:10002"
+    networks:
+      - smartclass-net
+
+  circle:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-circle
+    image: smartclass/circle:latest
+    container_name: smartclass-circle
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10003:10003"
+    networks:
+      - smartclass-net
+
+  dailyarticle:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-dailyarticle
+    image: smartclass/dailyarticle:latest
+    container_name: smartclass-dailyarticle
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10004:10004"
+    networks:
+      - smartclass-net
+
+  dailyword:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-dailyword
+    image: smartclass/dailyword:latest
+    container_name: smartclass-dailyword
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10005:10005"
+    networks:
+      - smartclass-net
+
+  feedback:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-feedback
+    image: smartclass/feedback:latest
+    container_name: smartclass-feedback
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - WX_REDIS_HOST=redis
+    ports:
+      - "10006:10006"
+    networks:
+      - smartclass-net
+
+  file:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-file
+    image: smartclass/file:latest
+    container_name: smartclass-file
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10007:10007"
+    networks:
+      - smartclass-net
+
+  intelligence:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-intelligence
+    image: smartclass/intelligence:latest
+    container_name: smartclass-intelligence
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10008:10008"
+    networks:
+      - smartclass-net
+
+  course:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-course
+    image: smartclass/course:latest
+    container_name: smartclass-course
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10009:10009"
+    networks:
+      - smartclass-net
+
+  stats:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-stats
+    image: smartclass/stats:latest
+    container_name: smartclass-stats
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+      - elasticsearch
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - ES_URIS=http://elasticsearch:9200
+    ports:
+      - "10013:10013"
+    networks:
+      - smartclass-net
+
+  learn-schedule:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-learn-schedule
+    image: smartclass/learn-schedule:latest
+    container_name: smartclass-learn-schedule
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10014:10014"
+    networks:
+      - smartclass-net
+
+  search:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-search
+    image: smartclass/search:latest
+    container_name: smartclass-search
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+      - elasticsearch
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - ES_URIS=http://elasticsearch:9200
+    ports:
+      - "10012:10012"
+    networks:
+      - smartclass-net
+
+  pay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_DIR: smartclass-backend-pay
+    image: smartclass/pay:latest
+    container_name: smartclass-pay
+    depends_on:
+      - mysql
+      - redis
+      - nacos
+    environment: *service-env
+    ports:
+      - "10011:10011"
+    networks:
+      - smartclass-net
+
+networks:
+  smartclass-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  es-data:

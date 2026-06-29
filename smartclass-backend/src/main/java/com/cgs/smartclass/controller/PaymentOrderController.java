@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -94,8 +96,20 @@ public class PaymentOrderController {
      */
     @PostMapping("/callback/{channel}")
     public BaseResponse<Boolean> handleCallback(@PathVariable String channel,
-                                                 @RequestBody Map<String, String> params) {
-        boolean result = paymentOrderService.handleCallback(channel, params);
+                                                 @RequestBody Map<String, String> params,
+                                                 HttpServletRequest httpRequest) {
+        // 提取微信支付 X-Wechatpay-* 请求头，去掉前缀并以小写 key 传入服务端验签
+        Map<String, String> headers = new HashMap<>();
+        Enumeration<String> headerNames = httpRequest.getHeaderNames();
+        if (headerNames != null) {
+            while (headerNames.hasMoreElements()) {
+                String name = headerNames.nextElement();
+                if (name != null && name.toLowerCase().startsWith("x-wechatpay-")) {
+                    headers.put(name.toLowerCase().replace("x-wechatpay-", ""), httpRequest.getHeader(name));
+                }
+            }
+        }
+        boolean result = paymentOrderService.handleCallbackWithVerify(channel, params, headers);
         return ResultUtils.success(result);
     }
 }

@@ -36,6 +36,8 @@
         <spring-cloud-alibaba.version>2023.0.3.2</spring-cloud-alibaba.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <knife4j.version>4.5.0</knife4j.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <fastjson2.version>2.0.53</fastjson2.version>
     </properties>
     <dependencies>
         <dependency>
@@ -126,6 +128,44 @@
                 <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
+            <!-- JWT 依赖管理（jjwt 0.12.x 拆分为 api/impl） -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <!-- fastjson2 替换 fastjson 1.x（CVE 修复） -->
+            <dependency>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2</artifactId>
+                <version>${fastjson2.version}</version>
+            </dependency>
+            <!-- P1-2: Sentinel 依赖管理（Feign 熔断降级）——版本由 spring-cloud-alibaba-dependencies 统一管理，此处仅声明，按需引入 -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+            </dependency>
+            <!-- P1-3: 链路追踪依赖管理（micrometer-tracing）——后续接入完整链路追踪方案时启用 -->
+            <!--
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bridge-brave</artifactId>
+            </dependency>
+            <dependency>
+                <groupId>io.zipkin.reporter2</groupId>
+                <artifactId>zipkin-reporter-brave</artifactId>
+            </dependency>
+            -->
         </dependencies>
     </dependencyManagement>
 

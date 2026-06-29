@@ -2,9 +2,9 @@
 spring:
   application:
     name: smartclass-cgs
-  # 默认 dev 环境
+  # 默认 prod 环境，开发时通过环境变量 SPRING_PROFILES_ACTIVE=dev 显式声明
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:prod}
   # Spring Boot 3 默认使用 path_pattern_matcher，无需额外配置
   # session 配置
   session:
@@ -83,6 +83,9 @@ wx:
   open:
     appId: ${WX_OPEN_APP_ID:}
     appSecret: ${WX_OPEN_APP_SECRET:}
+  # 微信支付
+  pay:
+    sign-key: ${WX_PAY_SIGN_KEY:}
 # 对象存储
 # todo 需替换配置
 cos:
@@ -151,7 +154,7 @@ management:
 
 # JWT 配置
 jwt:
-  secret: ${JWT_SECRET:smartclass-default-secret-key-must-be-at-least-256-bits-long-for-hs256}
+  secret: ${JWT_SECRET}
   expiration: 604800000
   header: Authorization
   token-prefix: "Bearer "
@@ -159,3 +162,7 @@ jwt:
 # 验证码配置
 captcha:
   enable: ${CAPTCHA_ENABLE:true}
+
+# 用户默认密码（管理员创建用户时使用）
+user:
+  default-password: ${USER_DEFAULT_PASSWORD:Smartclass@2024}

@@ -1,26 +1,24 @@
 # 测试配置文件
+# 注意：所有敏感信息必须通过环境变量注入，禁止明文写入此文件
 server:
   port: 8101
 spring:
   # 数据库配置
-  # todo 需替换配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/my_db
-    username: root
-    password: 123456
+    url: ${TEST_MYSQL_URL:jdbc:mysql://localhost:3306/my_db}
+    username: ${MYSQL_USERNAME:smartclass_app}
+    password: ${MYSQL_PASSWORD}
   # Redis 配置
-  # todo 需替换配置
   data:
     redis:
       database: 1
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       timeout: 5000
-      password: 123456
+      password: ${REDIS_PASSWORD}
   # Elasticsearch 配置
-  # todo 需替换配置
   elasticsearch:
-    uris: http://localhost:9200
-    username: root
-    password: 123456
+    uris: ${ES_URIS:http://localhost:9200}
+    username: ${ES_USERNAME:}
+    password: ${ES_PASSWORD:}

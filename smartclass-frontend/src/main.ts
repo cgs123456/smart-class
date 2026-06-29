@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import Vant from 'vant';
+import Vant, { Lazyload } from 'vant';
 import 'vant/lib/index.css';
 // 引入iconfont图标
 import '../public/icons/iconfont.js';
@@ -49,6 +49,7 @@ const app = createApp(App);
 const pinia = createPinia();
 
 // 全局错误处理器，防止未捕获的错误导致整个应用崩溃
+// TODO: 后续可接入错误上报系统（如 Sentry），需配置 DSN 与环境信息
 app.config.errorHandler = (err, instance, info) => {
   console.error('Global error:', err);
 };
@@ -73,6 +74,8 @@ const initCapacitor = async () => {
 
 app.use(router);
 app.use(Vant);
+// 注册 Vant Lazyload 指令，供组件通过 v-lazy 实现图片懒加载
+app.use(Lazyload);
 app.use(pinia);
 
 // 挂载应用

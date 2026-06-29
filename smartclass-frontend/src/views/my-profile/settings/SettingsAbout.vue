@@ -7,7 +7,7 @@
         <div class="app-logo">
           <img src="/logo.svg" alt="智云星课" />
           <h1>智云星课</h1>
-          <p class="version">版本 1.0.0</p>
+          <p class="version">版本 {{ appVersion }}</p>
         </div>
       </div>
 
@@ -79,6 +79,11 @@ import { ref } from 'vue';
 
 // 获取当前年份
 const currentYear = ref(new Date().getFullYear());
+
+// 应用版本号
+// TODO: 后续可接入 @capacitor/app-update 实现版本检查与更新提示
+// 需在原生平台对比服务端最新版本，弹窗引导用户更新
+const appVersion = ref('1.0.0');
 </script>
 
 <style scoped>

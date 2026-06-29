@@ -8,8 +8,8 @@ export default [
     ],
   },
 
-  { path: '/welcome', icon: 'smileOutlined', component: './Welcome', name: '欢迎' },
-  { path: '/datapanel', icon: 'fundTwoTone', component: './DataPanel', name: '数据看板' },
+  { path: '/welcome', icon: 'smileOutlined', component: './Welcome', name: '欢迎', access: 'canUser' },
+  { path: '/datapanel', icon: 'fundTwoTone', component: './DataPanel', name: '数据看板', access: 'canUser' },
   { path: '/admin/user', icon: 'userOutlined', component: './Admin/User', name: '用户管理' ,access: 'canAdmin' },
   { path: '/admin/classManagement', icon: 'teamOutlined', component: './Admin/Class', name: '班级管理' ,access: 'canAdmin' },
   { path: '/admin/postManagement', icon: 'formOutlined', component: './Admin/Post', name: '帖子管理' ,access: 'canAdmin' },

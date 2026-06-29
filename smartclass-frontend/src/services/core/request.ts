@@ -13,6 +13,36 @@ import { CancelablePromise } from './CancelablePromise';
 import type { OnCancel } from './CancelablePromise';
 import type { OpenAPIConfig } from './OpenAPI';
 
+// 统一处理 401 / 业务码 40100：清除登录态并跳转登录页
+// OpenAPI 生成的服务默认使用全局 axios 实例，此处为全局实例补充响应拦截器，
+// 使其与 src/api/index.ts 中 apiClient 的鉴权失败处理保持一致。
+const handleUnauthorized = () => {
+    try {
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('token');
+    } catch (e) {
+        // 忽略存储访问异常
+    }
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+    }
+};
+
+axios.interceptors.response.use(
+    (response) => {
+        if (response.data && response.data.code === 40100) {
+            handleUnauthorized();
+        }
+        return response;
+    },
+    (error) => {
+        if (error?.response?.status === 401) {
+            handleUnauthorized();
+        }
+        return Promise.reject(error);
+    },
+);
+
 export const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
     return value !== undefined && value !== null;
 };

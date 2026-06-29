@@ -1,6 +1,5 @@
 package com.cgs.smartclass.service.impl;
 
-import static com.cgs.smartclass.constant.UserConstant.SALT;
 import static com.cgs.smartclass.constant.UserConstant.USER_LOGIN_STATE;
 
 import cn.hutool.core.collection.CollUtil;
@@ -42,9 +41,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import com.cgs.smartclass.config.WxOpenConfig;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.DigestUtils;
 
 import jakarta.annotation.Resource;
 
@@ -64,10 +63,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private WxOpenConfig wxOpenConfig;
 
+    @Resource
+    private PasswordEncoder passwordEncoder;
+
     @Value("${captcha.enable:true}")
     private boolean captchaEnable;
 
+    @Value("${user.default-password:Smartclass@2024}")
+    private String defaultPassword;
+
+    /**
+     * 校验用户密码是否与数据库中存储的密文匹配。
+     *
+     * @param rawPassword     用户输入的明文密码
+     * @param storedPassword  数据库中存储的密文
+     * @return true 表示匹配
+     */
+    private boolean matchesPassword(String rawPassword, String storedPassword) {
+        if (StringUtils.isBlank(rawPassword) || StringUtils.isBlank(storedPassword)) {
+            return false;
+        }
+        return passwordEncoder.matches(rawPassword, storedPassword);
+    }
+
     // 新增一个用于注册时加锁的 map
+    // 注意：本地锁仅在单实例有效，多实例部署时需改为 Redis 分布式锁（如 Redisson）
     private final ConcurrentHashMap<String, Object> registerLockMap = new ConcurrentHashMap<>();
 
     @Override
@@ -100,8 +120,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
                 }
 
-                // 2. 加密
-                String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+                // 2. 加密（使用 BCrypt）
+                String encryptPassword = passwordEncoder.encode(userPassword);
 
                 // 3. 插入数据
                 User user = new User();
@@ -120,6 +140,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     // 在类中定义锁 map
+    // 注意：本地锁仅在单实例有效，多实例部署时需改为 Redis 分布式锁（如 Redisson）
     private final Map<String, Object> phoneRegisterLockMap = new ConcurrentHashMap<>();
 
     @Transactional(rollbackFor = Exception.class)
@@ -174,8 +195,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "无法生成唯一账号，请稍后重试");
                 }
 
-                // 加密密码
-                String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+                // 加密密码（使用 BCrypt）
+                String encryptPassword = passwordEncoder.encode(userPassword);
 
                 // 插入数据
                 User user = new User();
@@ -226,19 +247,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码错误");
         }
-        // 2. 加密
-        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-        // 查询用户是否存在
+        // 2. 查询用户（按账号）
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", userAccount);
-        queryWrapper.eq("userPassword", encryptPassword);
         User user = this.baseMapper.selectOne(queryWrapper);
-        // 用户不存在
-        if (user == null) {
+        // 用户不存在或密码不匹配
+        if (user == null || !matchesPassword(userPassword, user.getUserPassword())) {
             log.info("user login failed, userAccount cannot match userPassword");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
-        // 3. 记录用户的登录态
+        // 3. 记录用户的登录态（不存储密码哈希）
+        user.setUserPassword(null);
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
         // 4. 生成 JWT token 并设置到 response header
         setJwtTokenToResponse(request, user);
@@ -259,19 +278,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码错误");
         }
-        // 2. 加密
-        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-        // 查询用户是否存在
+        // 2. 查询用户（按手机号）
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userPhone", userPhone);
-        queryWrapper.eq("userPassword", encryptPassword);
         User user = this.baseMapper.selectOne(queryWrapper);
-        // 用户不存在
-        if (user == null) {
+        // 用户不存在或密码不匹配
+        if (user == null || !matchesPassword(userPassword, user.getUserPassword())) {
             log.info("user login failed, userPhone cannot match userPassword");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
-        // 3. 记录用户的登录态
+        // 3. 记录用户的登录态（不存储密码哈希）
+        user.setUserPassword(null);
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
         // 4. 生成 JWT token 并设置到 response header
         setJwtTokenToResponse(request, user);
@@ -279,6 +296,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     // 在类中定义锁 map
+    // 注意：本地锁仅在单实例有效，多实例部署时需改为 Redis 分布式锁（如 Redisson）
     private final Map<String, Object> wxLoginLockMap = new ConcurrentHashMap<>();
 
     @Transactional(rollbackFor = Exception.class)
@@ -319,7 +337,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     }
                 }
 
-                // 记录用户的登录态
+                // 记录用户的登录态（不存储密码哈希）
+                user.setUserPassword(null);
                 request.getSession().setAttribute(USER_LOGIN_STATE, user);
                 return getLoginUserVO(user);
 
@@ -395,14 +414,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             token = token.substring(7);
             try {
                 if (jwtUtil.validateToken(token)) {
-                    Long userId = jwtUtil.getUserIdFromToken(token);
-                    User user = this.getById(userId);
-                    if (user != null) {
-                        // 同步到 session，保持兼容
-                        request.getSession().setAttribute(USER_LOGIN_STATE, user);
-                        return user;
+                        Long userId = jwtUtil.getUserIdFromToken(token);
+                        User user = this.getById(userId);
+                        if (user != null) {
+                            // 同步到 session，保持兼容（不存储密码哈希）
+                            user.setUserPassword(null);
+                            request.getSession().setAttribute(USER_LOGIN_STATE, user);
+                            return user;
+                        }
                     }
-                }
             } catch (Exception e) {
                 log.warn("JWT token 验证失败", e);
             }
@@ -554,9 +574,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         BeanUtils.copyProperties(userAddRequest, user);
 
-        // 设置默认密码并加密存储
-        String defaultPassword = "12345678";
-        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + defaultPassword).getBytes());
+        // 设置默认密码并加密存储（使用 BCrypt）
+        String encryptPassword = passwordEncoder.encode(defaultPassword);
         user.setUserPassword(encryptPassword);
 
         boolean result = this.save(user);
@@ -568,6 +587,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public boolean updateUser(UserUpdateRequest userUpdateRequest) {
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
+        // 密码更新时使用 BCrypt 加密，避免明文入库
+        if (StringUtils.isNotBlank(user.getUserPassword())) {
+            user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
+        } else {
+            user.setUserPassword(null); // 不更新密码字段
+        }
         boolean result = this.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return true;
@@ -616,6 +641,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         BeanUtils.copyProperties(userUpdateMyRequest, user);
         user.setId(loginUser.getId());
+        // 密码更新时使用 BCrypt 加密，避免明文入库
+        if (StringUtils.isNotBlank(user.getUserPassword())) {
+            user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
+        } else {
+            user.setUserPassword(null); // 不更新密码字段
+        }
+        // 普通用户禁止自行修改角色
+        if (!this.isAdmin(loginUser)) {
+            user.setUserRole(null);
+        }
         boolean result = this.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return true;

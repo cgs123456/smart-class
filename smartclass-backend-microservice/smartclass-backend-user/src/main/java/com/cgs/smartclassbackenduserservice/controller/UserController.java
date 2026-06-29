@@ -23,20 +23,21 @@ import me.chanjar.weixin.common.bean.oauth2.WxOAuth2AccessToken;
 import me.chanjar.weixin.mp.api.WxMpService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.util.DigestUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
-import static com.cgs.smartclassbackendcommon.constant.UserConstant.SALT;
-
 
 /**
  * 用户接口
 */
 @RestController
+// P2-3: 保持 "/" —— 网关路由 Path=/api/user/** + StripPrefix=2 已剥离 /api/user 前缀，
+// 实际进入本服务的路径即为 /register、/login 等。若改为 /user 会导致所有接口 404，
+// 同步影响 JwtAuthGlobalFilter 白名单（/api/user/login 等）。
 @RequestMapping("/")
 @Slf4j
 public class UserController {
@@ -46,6 +47,9 @@ public class UserController {
 
     @Resource
     private WxOpenConfig wxOpenConfig;
+
+    @Resource
+    private PasswordEncoder passwordEncoder;
 
     // region 登录相关
 
@@ -65,7 +69,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
     String userPassword = userRegisterRequest.getUserPassword();
     String checkPassword = userRegisterRequest.getCheckPassword();
     if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
-        return null;
+        throw new BusinessException(ErrorCode.PARAMS_ERROR);
     }
     long result = userService.userRegister(userAccount, userPassword, checkPassword);
     return ResultUtils.success(result);
@@ -86,7 +90,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
        String userPassword = userRegisterByPhoneRequest.getUserPassword();
        String checkPassword = userRegisterByPhoneRequest.getCheckPassword();
        if (StringUtils.isAnyBlank(userPhone, userPassword, checkPassword)) {
-           return null;
+           throw new BusinessException(ErrorCode.PARAMS_ERROR);
        }
        long result = userService.userRegisterByPhone(userPhone, userPassword, checkPassword);
        return ResultUtils.success(result);
@@ -225,9 +229,9 @@ public BaseResponse<Long> addUser(@RequestBody UserAddRequest userAddRequest) {
     User user = new User();
     BeanUtils.copyProperties(userAddRequest, user);
 
-    // 设置默认密码并加密存储
+    // 设置默认密码并加密存储（BCrypt，替代原 MD5+SALT）
     String defaultPassword = "12345678";
-    String encryptPassword = DigestUtils.md5DigestAsHex((SALT + defaultPassword).getBytes());
+    String encryptPassword = passwordEncoder.encode(defaultPassword);
     user.setUserPassword(encryptPassword);
 
     boolean result = userService.save(user);

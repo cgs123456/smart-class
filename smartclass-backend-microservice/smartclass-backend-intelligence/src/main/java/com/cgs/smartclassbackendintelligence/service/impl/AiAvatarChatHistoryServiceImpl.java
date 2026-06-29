@@ -45,7 +45,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     private ApplicationContext applicationContext;
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean saveMessage(Long userId, Long aiAvatarId, String sessionId, String messageType, String content) {
         if (userId == null || aiAvatarId == null || sessionId == null || messageType == null || content == null) {
             return false;
@@ -170,7 +170,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateSessionName(String sessionId, String sessionName) {
         if (sessionId == null || sessionName == null) {
             return false;
@@ -195,7 +195,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteSession(String sessionId, Long userId) {
         if (sessionId == null || userId == null) {
             return false;
@@ -431,7 +431,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteSessionCompletely(String sessionId, Long userId, String baseUrl, String avatarAuth) {
         if (!StringUtils.hasLength(sessionId) || userId == null) {
             return false;

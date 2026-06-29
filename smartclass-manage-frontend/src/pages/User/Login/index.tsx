@@ -18,11 +18,22 @@ const Login: React.FC = () => {
       flexDirection: 'column',
       height: '100vh',
       overflow: 'auto',
-      backgroundImage:
-        "url('https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/V-_oS6r-i7wAAAAAAAAAAAAAFl94AQBr')",
+      backgroundImage: 'linear-gradient(135deg, #1890ff 0%, #722ed1 100%)',
       backgroundSize: '100% 100%',
     };
   });
+
+  /**
+   * 校验 redirect 参数，防止开放重定向
+   * 仅允许本站相对路径（以单斜杠开头，不允许协议相对 URL `//`）
+   */
+  const getSafeRedirect = (redirect: string | null): string => {
+    if (!redirect) return '/';
+    if (redirect.startsWith('/') && !redirect.startsWith('//')) {
+      return redirect;
+    }
+    return '/';
+  };
 
   const handleSubmit = async (values: API.UserLoginRequest) => {
     try {
@@ -39,10 +50,11 @@ const Login: React.FC = () => {
         currentUser: res.data,
       });
       const urlParams = new URL(window.location.href).searchParams;
-      history.push(urlParams.get('redirect') || '/');
+      history.push(getSafeRedirect(urlParams.get('redirect')));
       return;
-    } catch (error: any) {
-      const defaultLoginFailureMessage = `登录失败，${error.message}`;
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '未知错误';
+      const defaultLoginFailureMessage = `登录失败，${msg}`;
       message.error(defaultLoginFailureMessage);
     }
   };

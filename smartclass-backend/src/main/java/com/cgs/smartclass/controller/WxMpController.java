@@ -17,6 +17,7 @@ import me.chanjar.weixin.mp.api.WxMpService;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlMessage;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlOutMessage;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +39,13 @@ public class WxMpController {
     @Resource
     private WxMpMessageRouter router;
 
+    /**
+     * 应用域名，用于微信公众号菜单跳转
+     * 通过配置项 app.domain 注入，未配置时使用占位域名
+     */
+    @Value("${app.domain:https://your-domain.com}")
+    private String appDomain;
+
     @PostMapping("/")
     public void receiveMessage(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -48,7 +56,9 @@ public class WxMpController {
         String nonce = request.getParameter("nonce");
         String timestamp = request.getParameter("timestamp");
         if (!wxMpService.checkSignature(timestamp, nonce, signature)) {
+            response.setStatus(403);
             response.getWriter().println("非法请求");
+            return;
         }
         // 加密类型
         String encryptType = StringUtils.isBlank(request.getParameter("encrypt_type")) ? "raw"
@@ -107,7 +117,7 @@ public class WxMpController {
         wxMenuButton1SubButton1.setType(MenuButtonType.VIEW);
         wxMenuButton1SubButton1.setName("跳转页面");
         wxMenuButton1SubButton1.setUrl(
-                "https://yupi.icu");
+                appDomain);
         wxMenuButton1.setSubButtons(Collections.singletonList(wxMenuButton1SubButton1));
 
         // 菜单二
@@ -123,7 +133,7 @@ public class WxMpController {
         WxMenuButton wxMenuButton3SubButton1 = new WxMenuButton();
         wxMenuButton3SubButton1.setType(MenuButtonType.VIEW);
         wxMenuButton3SubButton1.setName("编程学习");
-        wxMenuButton3SubButton1.setUrl("https://yupi.icu");
+        wxMenuButton3SubButton1.setUrl(appDomain);
         wxMenuButton3.setSubButtons(Collections.singletonList(wxMenuButton3SubButton1));
 
         // 设置主菜单

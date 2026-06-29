@@ -51,7 +51,7 @@ public class FileController {
             return ResultUtils.success(url);
         } catch (Exception e) {
             log.error("文件上传失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败: " + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败，请稍后重试");
         }
     }
     
@@ -77,7 +77,7 @@ public class FileController {
             return ResultUtils.success(url);
         } catch (Exception e) {
             log.error("头像上传失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败: " + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败，请稍后重试");
         }
     }
     
@@ -96,7 +96,7 @@ public class FileController {
             return ResultUtils.success(url);
         } catch (Exception e) {
             log.error("视频上传失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败: " + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败，请稍后重试");
         }
     }
     
@@ -115,7 +115,7 @@ public class FileController {
             return ResultUtils.success(url);
         } catch (Exception e) {
             log.error("文档上传失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败: " + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败，请稍后重试");
         }
     }
 
@@ -134,7 +134,7 @@ public class FileController {
             return ResultUtils.success(url);
         } catch (Exception e) {
             log.error("课程资料上传失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败: " + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败，请稍后重试");
         }
     }
 }

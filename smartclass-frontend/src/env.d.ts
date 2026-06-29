@@ -22,7 +22,6 @@ declare module '@capacitor/core' {
   interface PluginRegistry {
     SplashScreen: any;
     StatusBar: any;
-    Keyboard: any;
     Network: any;
     Camera: any;
     Preferences: any;

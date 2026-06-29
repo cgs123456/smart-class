@@ -8,6 +8,17 @@ import styles from './index.less';
 
 const { Title, Paragraph, Text } = Typography;
 
+// 临时 XSS 防护：移除 script 标签和危险事件属性
+const sanitizeHtml = (html: string): string => {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/javascript:/gi, '');
+};
+
 /**
  * 每日美文详情页
  */
@@ -152,7 +163,7 @@ const DailyArticleDetail: React.FC = () => {
               
               <div className={styles.articleContent}>
                 {article.content ? (
-                  <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
                 ) : (
                   <div className={styles.noContent}>暂无内容</div>
                 )}

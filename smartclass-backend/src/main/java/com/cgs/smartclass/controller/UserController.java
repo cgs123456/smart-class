@@ -58,7 +58,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
     String captchaUuid = userRegisterRequest.getCaptchaUuid();
     String captchaCode = userRegisterRequest.getCaptchaCode();
     if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
-        return null;
+        throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
     }
     long result = userService.userRegister(userAccount, userPassword, checkPassword, captchaUuid, captchaCode);
     return ResultUtils.success(result);
@@ -81,7 +81,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
        String captchaUuid = userRegisterByPhoneRequest.getCaptchaUuid();
        String captchaCode = userRegisterByPhoneRequest.getCaptchaCode();
        if (StringUtils.isAnyBlank(userPhone, userPassword, checkPassword)) {
-           return null;
+           throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
        }
        long result = userService.userRegisterByPhone(userPhone, userPassword, checkPassword, captchaUuid, captchaCode);
        return ResultUtils.success(result);
@@ -253,9 +253,9 @@ public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdat
 
 
 /**
- * 根据用户 ID 获取用户信息（管理员可查看任意用户，普通用户仅能查看自己）
+ * 根据用户 ID 获取用户信息（脱敏视图）
  *
- * <p>该接口用于根据用户 ID 查询对应的用户信息。</p>
+ * <p>该接口用于根据用户 ID 查询对应的用户信息，返回脱敏后的 UserVO，避免泄露密码哈希、手机号等敏感字段。</p>
  * <ul>
  *   <li>管理员角色：可以查看系统中任意用户的信息</li>
  *   <li>普通用户：只能查看自己的信息，若尝试访问其他用户将返回无权限错误</li>
@@ -263,13 +263,13 @@ public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdat
  *
  * @param id      要查询的用户 ID，必须大于 0
  * @param request 当前 HTTP 请求对象，用于获取当前登录用户及鉴权
- * @return BaseResponse<User> 返回查询到的用户信息
+ * @return BaseResponse<UserVO> 返回脱敏后的用户视图信息
  * @throws BusinessException 如果参数无效、无权限或用户不存在，抛出相应的业务异常
  */
 @GetMapping("/get")
-public BaseResponse<User> getUserById(long id, HttpServletRequest request) {
+public BaseResponse<UserVO> getUserById(long id, HttpServletRequest request) {
     User user = userService.getUserByIdWithAuthCheck(id, request);
-    return ResultUtils.success(user);
+    return ResultUtils.success(userService.getUserVO(user));
 }
 
 

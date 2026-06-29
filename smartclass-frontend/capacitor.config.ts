@@ -7,14 +7,16 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
-    cleartext: true,
+    // 禁止明文 HTTP 流量，强制所有请求走 HTTPS
+    // 避免会话 Cookie / Authorization 头被中间人窃听
+    cleartext: false,
   },
   android: {
     buildOptions: {
-      keystorePath: '',
-      keystorePassword: '',
-      keystoreAlias: '',
-      keystoreAliasPassword: '',
+      keystorePath: process.env.CAPACITOR_KEYSTORE_PATH || '',
+      keystorePassword: process.env.CAPACITOR_KEYSTORE_PASSWORD || '',
+      keystoreAlias: process.env.CAPACITOR_KEYSTORE_ALIAS || 'smartclass',
+      keystoreAliasPassword: process.env.CAPACITOR_KEYSTORE_ALIAS_PASSWORD || '',
       releaseType: 'AAB',
     },
   },
@@ -28,11 +30,6 @@ const config: CapacitorConfig = {
     },
     Camera: {
       permissions: ['camera', 'photos'],
-    },
-    Keyboard: {
-      resize: 'body',
-      style: 'dark',
-      resizeOnFullScreen: true,
     },
     CapacitorHttp: {
       enabled: true,

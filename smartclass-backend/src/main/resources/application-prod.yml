@@ -1,36 +1,41 @@
 # 线上配置文件
+# 注意：所有敏感信息必须通过环境变量注入，禁止明文写入此文件
 server:
   port: 8101
 spring:
   # 数据库配置
-  # todo 需替换配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://1Panel-mysql-hMmB:3306/smart_class
-    username: root
-    password: mysql_5TDxKc
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/smart_class}
+    username: ${MYSQL_USERNAME:smartclass_app}
+    password: ${MYSQL_PASSWORD}
   # Redis 配置
-  # todo 需替换配置
   data:
     redis:
       database: 0
-      host: 1Panel-redis-kOgw
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       timeout: 5000
-      password: redis_wKaQkb
+      password: ${REDIS_PASSWORD}
   # Elasticsearch 配置
-  # todo 需替换配置
   elasticsearch:
-    uris: http://localhost:9200
-    username: root
-    password: 123456
+    uris: ${ES_URIS:http://localhost:9200}
+    username: ${ES_USERNAME:}
+    password: ${ES_PASSWORD:}
 mybatis-plus:
   configuration:
     # 生产环境关闭日志
     log-impl: ''
-# 接口文档配置
+# 接口文档配置（生产环境默认关闭，通过环境变量开启）
 knife4j:
+  enable: ${KNIFE4J_ENABLE:false}
   basic:
-    enable: true
-    username: root
-    password: 123456
+    enable: ${KNIFE4J_BASIC_ENABLE:false}
+    username: ${KNIFE4J_USERNAME:}
+    password: ${KNIFE4J_PASSWORD:}
+# 日志级别配置（生产环境统一 info，避免 dev 下过于详细的 debug 输出）
+logging:
+  level:
+    com.cgs.smartclass: info
+    com.cgs.smartclass.netty: info
+    com.cgs.smartclass.service.impl.ChatMessageServiceImpl: info

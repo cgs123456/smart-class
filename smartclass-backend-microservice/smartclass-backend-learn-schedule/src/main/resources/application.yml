@@ -5,10 +5,11 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848
-  # 默认 dev 环境
+        # P1-6: 通过环境变量注入，避免硬编码
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+  # 默认 dev 环境（生产通过环境变量 SPRING_PROFILES_ACTIVE 切换）
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   # 支持 swagger3
   mvc:
     pathmatch:
@@ -21,20 +22,20 @@ spring:
   # 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://110.42.45.244:3307/smart_class
-    username: smartclass
-    password: possible1.
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/smart_class}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD}
   # Redis 配置
   data:
     redis:
       database: 0
-      host: 110.42.45.236
+      host: ${REDIS_HOST:localhost}
       port: 6379
       timeout: 5000
-      password: redis_ckJ4cM
+      password: ${REDIS_PASSWORD}
 server:
   address: 0.0.0.0
-  port: 10012
+  port: 10014
   servlet:
     # cookie 30 天过期
     session:
@@ -50,3 +51,19 @@ mybatis-plus:
       logic-delete-field: isDelete
       logic-delete-value: 1
       logic-not-delete-value: 0
+# P1-4: Actuator 监控端点（仅暴露 health/info，避免敏感信息泄漏）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+# P1-2/P1-9: Feign 超时配置（避免因下游服务慢导致级联阻塞）
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 2000
+        read-timeout: 5000

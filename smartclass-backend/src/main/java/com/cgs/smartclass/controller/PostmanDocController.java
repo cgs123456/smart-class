@@ -1,13 +1,15 @@
 package com.cgs.smartclass.controller;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
+import com.cgs.smartclass.annotation.AuthCheck;
 import com.cgs.smartclass.common.BaseResponse;
 import com.cgs.smartclass.common.ErrorCode;
 import com.cgs.smartclass.common.ResultUtils;
 import com.cgs.smartclass.config.WebSocketEndpointConfig;
+import com.cgs.smartclass.constant.UserConstant;
 import com.cgs.smartclass.exception.BusinessException;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,6 +70,7 @@ public class PostmanDocController {
      */
     @GetMapping
     @Operation(summary = "导出Postman Collection", description = "生成可导入Postman的接口文档，包含REST和WebSocket接口")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public ResponseEntity<Object> generatePostmanCollection(HttpServletRequest request) {
         log.info("开始生成Postman Collection文件");
         try {
@@ -91,7 +94,7 @@ public class PostmanDocController {
             headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=smartclass-postman-collection.json");
             
             // 格式化输出
-            String jsonOutput = JSON.toJSONString(collection, SerializerFeature.PrettyFormat);
+            String jsonOutput = JSON.toJSONString(collection, JSONWriter.Feature.PrettyFormat);
             log.info("Postman Collection文件生成成功");
             return ResponseEntity.ok().headers(headers).body(jsonOutput);
             
@@ -109,6 +112,7 @@ public class PostmanDocController {
      */
     @GetMapping("/server")
     @Operation(summary = "获取服务器信息", description = "返回服务器Host、Port等信息，用于Postman配置")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Map<String, String>> getServerInfo(HttpServletRequest request) {
         log.info("获取服务器信息");
         Map<String, String> result = new HashMap<>();
@@ -133,6 +137,7 @@ public class PostmanDocController {
      */
     @GetMapping("/websocket-endpoints")
     @Operation(summary = "获取WebSocket接口列表", description = "返回所有注册的WebSocket消息类型及其接口定义")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<List<Map<String, Object>>> listWebSocketEndpoints() {
         log.info("获取WebSocket接口列表");
         List<Map<String, Object>> endpointsList = new ArrayList<>();
@@ -158,6 +163,7 @@ public class PostmanDocController {
      */
     @GetMapping("/dynamic")
     @Operation(summary = "动态生成Postman Collection", description = "实时生成最新的Postman Collection文件，包含最新的REST和WebSocket接口")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public ResponseEntity<Object> generateDynamicPostmanCollection(HttpServletRequest request) {
         log.info("开始动态生成Postman Collection文件");
         return generatePostmanCollection(request);

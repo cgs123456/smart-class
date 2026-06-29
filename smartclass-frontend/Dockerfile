@@ -28,5 +28,12 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # 暴露80端口
 EXPOSE 80
 
+# 以非 root 用户运行 nginx，提升容器安全性
+USER nginx
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -qO- http://localhost/health || exit 1
+
 # 启动nginx
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]

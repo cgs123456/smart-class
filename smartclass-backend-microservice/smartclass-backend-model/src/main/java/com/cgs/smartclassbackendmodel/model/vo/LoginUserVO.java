@@ -39,6 +39,11 @@ public class LoginUserVO implements Serializable {
     private String userRole;
 
     /**
+     * JWT 访问令牌（登录成功后由 user 服务签发，前端需在后续请求的 Authorization 头中携带）
+     */
+    private String token;
+
+    /**
      * 创建时间
      */
     private Date createTime;

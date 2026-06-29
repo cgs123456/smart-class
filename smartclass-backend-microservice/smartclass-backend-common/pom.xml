@@ -36,9 +36,26 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- 分布式 Session（基于 Redis） -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+
+        <!-- P1-4: Spring Boot Actuator 健康检查与监控端点 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- P1-2: Sentinel 依赖（Feign 熔断降级），通过 spring-cloud-starter-openfeign 触发启用 -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
         </dependency>
 
         <!-- 工具类库 -->
@@ -68,11 +85,10 @@
             <version>${guava.version}</version>
         </dependency>
 
-        <!-- JSON处理 -->
+        <!-- JSON处理（fastjson2 替换 fastjson 1.x，修复已知 CVE；版本由父 pom 统一管理） -->
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
         </dependency>
 
         <!-- 测试依赖 -->

@@ -1,6 +1,6 @@
 package com.cgs.smartclass.netty;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.cgs.smartclass.constant.WebSocketMessageType;
 import com.cgs.smartclass.model.dto.websocket.WebSocketMessage;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,9 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,7 +33,9 @@ public class WebSocketAuthHandler extends ChannelInboundHandlerAdapter {
     
     private final StringRedisTemplate redisTemplate;
     private final ChannelManager channelManager;
-    private final Map<String, Long> tokenUserMap = new HashMap<>();
+    // 使用 ConcurrentHashMap 保证多线程下的 token 缓存线程安全
+    // 注意：当前未做缓存过期清理，后续可改用 Caffeine 替代以支持过期与容量限制
+    private final Map<String, Long> tokenUserMap = new ConcurrentHashMap<>();
     private final int authTimeoutSeconds;
     
     public WebSocketAuthHandler(int authTimeoutSeconds, StringRedisTemplate redisTemplate, ChannelManager channelManager) {
@@ -212,15 +214,6 @@ public class WebSocketAuthHandler extends ChannelInboundHandlerAdapter {
             }
         } catch (Exception e) {
             log.debug("从Redis获取用户ID失败", e);
-        }
-        
-        // 兼容模式：直接将token解析为用户ID（用于Postman测试）
-        try {
-            if (StringUtils.isNumeric(token)) {
-                return Long.parseLong(token);
-            }
-        } catch (NumberFormatException e) {
-            log.debug("token不是有效的用户ID: {}", token);
         }
         
         return null;

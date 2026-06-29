@@ -10,8 +10,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 文件服务客户端
+ *
+ * <p>name 与 file 服务在 Nacos 注册的服务名一致（{@code smartclass-backend-file}），
+ * path 指向内部接口前缀（{@code /inner}）。</p>
  */
-@FeignClient(name = "smartclass-file-service", path = "/api/file/inner")
+@FeignClient(name = "smartclass-backend-file", path = "/inner")
 public interface FileFeignClient {
 
     /**

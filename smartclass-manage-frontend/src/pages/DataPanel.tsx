@@ -1,6 +1,6 @@
 import { PageContainer } from '@ant-design/pro-components';
 import { useModel } from '@umijs/max';
-import { Card, Col, Row, Statistic, Typography, Divider, Table, Progress, Tabs } from 'antd';
+import { Alert, Card, Col, Row, Statistic, Typography, Divider, Table, Progress, Tabs } from 'antd';
 import { FundTwoTone, TeamOutlined, FormOutlined, PlayCircleOutlined, RobotOutlined, BookOutlined, FileTextOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons';
 import React, { useState } from 'react';
 import ReactECharts from 'echarts-for-react';
@@ -441,6 +441,13 @@ const DataPanel: React.FC = () => {
       }}
     >
       <Card>
+        <Alert
+          message="数据为模拟展示"
+          description="当前页面展示的是模拟数据，正式上线前需对接后端统计接口。"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
           <FundTwoTone style={{ fontSize: 28, marginRight: 12 }} />
           <Title level={3} style={{ margin: 0 }}>智星云课数据看板</Title>

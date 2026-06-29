@@ -158,7 +158,7 @@ public class DifyServiceImpl implements DifyService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public AiAvatarChatHistory sendChatMessage(DifyChatMessageRequest request) {
         // 创建用户消息对象
         AiAvatarChatHistory userMessage = chatMessageHelper.createUserMessage(
@@ -391,7 +391,7 @@ public class DifyServiceImpl implements DifyService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public AiAvatarChatHistory sendChatMessageStreaming(DifyChatMessageRequest request, DifyStreamCallback callback) {
         // 创建用户消息对象
         AiAvatarChatHistory userMessage = chatMessageHelper.createUserMessage(

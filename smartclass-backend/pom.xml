@@ -133,10 +133,10 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.115.Final</version>
         </dependency>
-        <!-- FastJSON依赖，用于消息序列化 -->
+        <!-- FastJSON2 依赖，用于消息序列化（替换 fastjson 1.x 修复已知 CVE） -->
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
             <version>2.0.53</version>
         </dependency>
         <!-- Spring Security -->
@@ -185,6 +185,10 @@
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-devtools</artifactId>
                         </exclude>
                     </excludes>
                 </configuration>

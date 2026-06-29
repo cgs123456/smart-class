@@ -14,13 +14,14 @@ import com.cgs.smartclassbackendmodel.model.vo.LoginUserVO;
 import com.cgs.smartclassbackendmodel.model.vo.UserVO;
 import com.cgs.smartclassbackenduserservice.mapper.UserMapper;
 import com.cgs.smartclassbackenduserservice.service.UserService;
+import com.cgs.smartclassbackenduserservice.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.DigestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -30,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
-import static com.cgs.smartclassbackendcommon.constant.UserConstant.SALT;
 import static com.cgs.smartclassbackendcommon.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -41,8 +41,16 @@ import static com.cgs.smartclassbackendcommon.constant.UserConstant.USER_LOGIN_S
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
 
-    // 新增一个用于注册时加锁的 map
     private final ConcurrentHashMap<String, Object> registerLockMap = new ConcurrentHashMap<>();
+
+    private final JwtUtil jwtUtil;
+
+    private final PasswordEncoder passwordEncoder;
+
+    public UserServiceImpl(JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
+        this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -72,8 +80,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
                 }
 
-                // 2. 加密
-                String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+                // 2. 加密（BCrypt，自带随机盐）
+                String encryptPassword = passwordEncoder.encode(userPassword);
 
                 // 3. 插入数据
                 User user = new User();
@@ -144,8 +152,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "无法生成唯一账号，请稍后重试");
                 }
 
-                // 加密密码
-                String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+                // 加密密码（BCrypt）
+                String encryptPassword = passwordEncoder.encode(userPassword);
 
                 // 插入数据
                 User user = new User();
@@ -194,20 +202,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码错误");
         }
-        // 2. 加密
-        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-        // 查询用户是否存在
+        // 2. 查询用户是否存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", userAccount);
-        queryWrapper.eq("userPassword", encryptPassword);
         User user = this.baseMapper.selectOne(queryWrapper);
-        // 用户不存在
-        if (user == null) {
+        // 用户不存在或密码不匹配
+        if (user == null || !passwordEncoder.matches(userPassword, user.getUserPassword())) {
             log.info("user login failed, userAccount cannot match userPassword");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
         // 3. 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
+        // 4. 签发 JWT
         return this.getLoginUserVO(user);
     }
 
@@ -223,20 +229,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码错误");
         }
-        // 2. 加密
-        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-        // 查询用户是否存在
+        // 2. 查询用户是否存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userPhone", userPhone);
-        queryWrapper.eq("userPassword", encryptPassword);
         User user = this.baseMapper.selectOne(queryWrapper);
-        // 用户不存在
-        if (user == null) {
+        // 用户不存在或密码不匹配
+        if (user == null || !passwordEncoder.matches(userPassword, user.getUserPassword())) {
             log.info("user login failed, userPhone cannot match userPassword");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
         // 3. 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
+        // 4. 签发 JWT
         return this.getLoginUserVO(user);
     }
 
@@ -375,6 +379,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         LoginUserVO loginUserVO = new LoginUserVO();
         BeanUtils.copyProperties(user, loginUserVO);
+        // 签发 JWT 并写入返回视图
+        String token = jwtUtil.generateToken(user.getId(), user.getUserRole());
+        loginUserVO.setToken(token);
         return loginUserVO;
     }
 
