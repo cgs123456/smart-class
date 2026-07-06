@@ -9,6 +9,9 @@
 ### 核心功能
 
 - **AI 智能对话** - 集成 Dify AI，支持流式/阻塞式响应、多智能体切换、聊天历史管理、会话总结、多模态输入（文本/图片/文件）
+- **课程知识 RAG** - 课程内容向量化存入 Elasticsearch（dense_vector + KNN 检索），用户提问时自动检索 Top3 相关课程内容注入 Dify 上下文，支持向量检索与文本检索双模式降级
+- **个性化学习路径推荐** - 聚合用户文章/单词/课程/收藏/评价等 8 维学习数据构建用户画像，注入 Dify inputs 让 AI 基于画像推荐"接下来学什么"
+- **AI 生成课程习题** - 读取课程章节内容调用 Dify LLM 自动生成选择题/简答题，含选项/答案/解析/难度，存入错题本供学生练习
 - **课程学习** - 课程分类/章节/小节管理、学习进度跟踪、收藏与评价、课程表、课程资料管理
 - **每日学习** - 每日文章推送、单词学习与记忆、生词本、学习打卡、个性化学习推荐
 - **社交圈子** - 帖子发布、评论/回复、点赞/收藏、推荐/关注/热榜/问答分类
@@ -24,9 +27,9 @@
 - **框架** - Spring Boot、Spring Cloud、Spring Cloud Alibaba（微服务版）
 - **语言** - Java 17
 - **ORM** - MyBatis Plus
-- **搜索** - Spring Data Elasticsearch（CriteriaQuery API）
+- **搜索** - Spring Data Elasticsearch（CriteriaQuery API、KNN 向量检索）
 - **会话** - Spring Session + Redis（分布式会话）
-- **AI 集成** - Dify AI API（OkHttp + SSE 流式响应）
+- **AI 集成** - Dify AI API（OkHttp + SSE 流式响应）、OpenAI 兼容 Embedding API（课程内容向量化）
 - **API 文档** - Knife4j OpenAPI 3（Jakarta）
 - **微信公众号** - WxJava
 - **对象存储** - 腾讯云 COS
@@ -185,7 +188,7 @@ smartclass-backend/
 │   │   ├── NettyWebSocketConfig.java      # WebSocket 配置
 │   │   ├── TraceIdFilter.java             # 链路追踪过滤器
 │   │   └── ...
-│   ├── controller/                        # 控制器（43 个）
+│   ├── controller/                        # 控制器（44 个，含 ExerciseGenerationController）
 │   ├── filter/
 │   │   ├── JwtAuthenticationFilter.java   # JWT 认证过滤器
 │   │   ├── RateLimitFilter.java           # 限流过滤器
@@ -198,16 +201,17 @@ smartclass-backend/
 │   │   └── HeartbeatHandler.java          # 心跳处理
 │   ├── manager/
 │   │   └── CosManager.java                # 腾讯云 COS（自定义线程池）
-│   ├── mapper/                            # MyBatis Mapper（41 个接口）
+│   ├── mapper/                            # MyBatis Mapper（43 个接口）
 │   ├── model/
-│   │   ├── entity/                        # 实体类（39 个）
-│   │   ├── dto/                           # 数据传输对象
+│   │   ├── entity/                        # 实体类（41 个，含 UserCourse/UserCourseProgress）
+│   │   ├── dto/                           # 数据传输对象（含 CourseKnowledgeEsDTO）
 │   │   ├── vo/                            # 视图对象（34 个）
 │   │   └── enums/                         # 枚举
 │   ├── service/                           # 服务层
 │   │   ├── dify/                          # Dify AI 服务（6 个）
-│   │   └── impl/                          # 实现类（46 个）
-│   ├── esdao/                             # Elasticsearch DAO（3 个）
+│   │   └── impl/                          # 实现类（52 个，含 RAG/学习路径/习题生成）
+│   ├── esdao/                             # Elasticsearch DAO（4 个，含 CourseKnowledgeEsDao）
+│   ├── job/once/                          # 全量同步任务（含 CourseKnowledge ES 同步）
 │   ├── exception/                         # 全局异常处理
 │   └── utils/                             # 工具类（9 个）
 ├── src/main/resources/
@@ -251,9 +255,12 @@ smartclass-backend-microservice/
 ├── smartclass-backend-service-client/     # Feign 客户端模块
 │   └── src/main/java/.../serviceclient/
 │       ├── config/FeignInternalCallInterceptor.java  # 内部调用拦截器
-│       └── service/                      # Feign 客户端接口
+│   └── service/                      # Feign 客户端接口
 │           ├── UserFeignClient.java       # 用户服务客户端
 │           ├── FileFeignClient.java       # 文件服务客户端
+│           ├── CourseFeignClient.java     # 课程服务客户端（含学习摘要）
+│           ├── DailyWordFeignClient.java  # 单词服务客户端（学习统计）
+│           ├── DailyArticleFeignClient.java # 文章服务客户端（阅读统计）
 │           └── WebSocketNotificationService.java
 ├── smartclass-backend-gateway/           # API 网关
 │   └── src/main/java/.../gateway/
@@ -267,7 +274,7 @@ smartclass-backend-microservice/
 ├── smartclass-backend-dailyword/         # 每日单词（端口 10005）
 ├── smartclass-backend-feedback/          # 用户反馈（端口 10006）
 ├── smartclass-backend-file/              # 文件服务（端口 10007）
-├── smartclass-backend-intelligence/      # AI 智能服务（端口 10008）
+├── smartclass-backend-intelligence/      # AI 智能服务（端口 10008，含 RAG/学习路径/习题生成）
 ├── smartclass-backend-course/            # 课程服务（端口 10009）
 ├── smartclass-backend-pay/               # 支付服务（端口 10011）
 ├── smartclass-backend-search/            # 搜索服务（端口 10012）
@@ -393,6 +400,11 @@ smartclass-manage-frontend/
 | `WebSocketAuthHandler.java` | WebSocket 认证，双模式（URL token + 消息认证），10 秒超时 |
 | `CosManager.java` | 腾讯云 COS 管理，自定义线程池（有界队列 + CallerRunsPolicy） |
 | `PaymentOrderServiceImpl.java` | 支付服务，微信 HMAC-SHA256 + 支付宝 RSA-SHA256 验签 |
+| `CourseRagServiceImpl.java` | 课程知识 RAG，ES KNN 向量检索 + 文本检索降级，检索结果注入 Dify inputs |
+| `EmbeddingServiceImpl.java` | Embedding 服务，调用 OpenAI 兼容 API 生成文本向量 |
+| `LearningPathServiceImpl.java` | 学习路径推荐，聚合 8 维学习数据构建用户画像注入 Dify inputs |
+| `ExerciseGenerationServiceImpl.java` | AI 习题生成，读取课程内容调用 Dify LLM 生成选择题/简答题 |
+| `DifyChatServiceImpl.java` | Dify 对话核心，buildChatRequest 注入 RAG 上下文和用户画像 |
 | `ErrorCode.java` | 统一错误码枚举 |
 
 ### 后端微服务版本
@@ -407,6 +419,13 @@ smartclass-manage-frontend/
 | `SmartclassCommonAutoConfiguration.java` | 公共模块自动配置，注册 AuthInterceptor 和全局异常处理 |
 | `AuthInterceptor.java` | 公共权限切面，兼容 Session 和网关切面两种场景 |
 | `UserFeignClient.java` | 用户服务 Feign 客户端，混合本地逻辑与远程调用 |
+| `CourseFeignClient.java` | 课程服务 Feign 客户端，获取课程/章节/小节/学习摘要 |
+| `DailyWordFeignClient.java` | 单词服务 Feign 客户端，获取单词学习统计 |
+| `DailyArticleFeignClient.java` | 文章服务 Feign 客户端，获取文章阅读统计 |
+| `CourseInnerController.java` | 课程服务内部接口，供 Feign 调用（/inner/**） |
+| `CourseRagServiceImpl.java` | 微服务版 RAG，通过 Feign 获取课程数据 + ES 向量检索 |
+| `LearningPathServiceImpl.java` | 微服务版学习路径，通过 4 个 Feign 客户端聚合用户画像 |
+| `ExerciseGenerationServiceImpl.java` | 微服务版习题生成，通过 Feign 获取课程内容调用 Dify |
 
 ### 移动端前端
 
@@ -517,6 +536,14 @@ export WX_MP_TOKEN=your_wx_token
 export WX_MP_AES_KEY=your_wx_aes_key
 export WX_MP_APP_ID=your_wx_appid
 export WX_MP_SECRET=your_wx_secret
+
+# AI 增强功能（可选）
+export RAG_ENABLED=false                    # 课程知识 RAG + 学习路径推荐
+export RAG_EMBEDDING_API_URL=               # OpenAI 兼容 Embedding API 地址
+export RAG_EMBEDDING_API_KEY=               # Embedding API Key
+export RAG_EMBEDDING_MODEL=text-embedding-v3
+export EXERCISE_ENABLED=false               # AI 习题生成
+export EXERCISE_AI_AVATAR_ID=               # 习题生成专用的 AI 分身 ID
 ```
 
 启动后端（单体模式）：
@@ -577,3 +604,72 @@ docker-compose up -d
 3. 创建 API 密钥
 4. 在管理后台「AI 分身管理」中添加智能体，配置 Base URL、API Key、App ID
 5. 在移动端测试对话功能
+
+### AI 增强功能架构
+
+系统在 Dify 对话基础上实现了三个 AI 增强功能，通过 `DifyChatRequest.inputs` 注入上下文：
+
+```
+用户提问 → buildChatRequest()
+               ├─ CourseRagService.retrieveRelevantContent()  → inputs["course_context"]
+               │    ├─ EmbeddingService.embed(query)           ← OpenAI 兼容 Embedding API
+               │    ├─ ES KNN 向量检索 (dense_vector + cosine)  ← Top3 相关课程内容
+               │    └─ 降级：ES multi_match 文本检索             ← embedding 不可用时
+               └─ LearningPathService.buildUserProfile()      → inputs["user_profile"]
+                    ├─ 文章阅读统计（已读/阅读中）
+                    ├─ 单词学习统计（掌握/熟悉/生词）
+                    ├─ 课程学习统计（已购/已完成/平均进度）
+                    ├─ 收藏/评价统计
+                    └─ tags 高频标签 + 难度偏好分析
+                    ↓
+               Dify API（System Prompt 引用 {{course_context}} {{user_profile}}）
+```
+
+### 课程知识 RAG
+
+将课程内容向量化存入 Elasticsearch，用户提问时自动检索相关知识注入对话上下文。
+
+**启用步骤：**
+
+1. 设置环境变量 `RAG_ENABLED=true`
+2. 配置 Embedding API：`RAG_EMBEDDING_API_URL`、`RAG_EMBEDDING_API_KEY`、`RAG_EMBEDDING_MODEL`
+3. 在 ES 中创建 `course_knowledge` 索引（参考 `sql/course_knowledge_es_mapping.json`，dims 需与 embedding 模型一致）
+4. 启动应用自动触发全量同步（或手动调用 `CourseRagService.syncAllCourseContent()`）
+5. 在 Dify App 的 System Prompt 中引用 `{{course_context}}`
+
+**降级策略：** Embedding 服务不可用时自动降级为 ES 文本检索；ES 不可用时返回空字符串不影响对话。
+
+### 个性化学习路径推荐
+
+聚合用户学习数据构建画像，让 AI 基于画像推荐学习路径。
+
+**数据维度（8 维）：**
+- 用户基本信息（姓名/角色/地区/简介）
+- 文章阅读统计（已读完/阅读中）
+- 单词学习统计（掌握/熟悉/生词）
+- 生词本统计
+- 课程学习统计（已购/已完成/平均进度）
+- 课程收藏统计
+- 课程评价统计（评价数/平均评分）
+- 学习偏好分析（tags 高频标签 Top5 + 难度偏好）
+
+**启用方式：** 与 RAG 共用 `RAG_ENABLED=true` 开关，在 Dify App 的 System Prompt 中引用 `{{user_profile}}`。
+
+### AI 生成课程习题
+
+管理员触发后系统自动读取课程章节内容，调用 Dify LLM 生成选择题/简答题。
+
+**API 接口：**
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/api/exercise/generate` | ADMIN | 生成课程习题（参数：courseId、chapterId?、questionCount?） |
+| GET | `/api/exercise/list?courseId=X&chapterId=Y` | 公开 | 获取课程 AI 习题列表 |
+
+**启用步骤：**
+
+1. 执行 SQL 迁移（单体版：`sql/add_exercise_fields.sql`；微服务版：`sql/wrong_question_tables.sql`）
+2. 在管理后台创建一个习题生成专用的 Dify 应用并配置 Prompt
+3. 设置环境变量 `EXERCISE_ENABLED=true`、`EXERCISE_AI_AVATAR_ID=<习题生成助手 ID>`
+4. 管理员调用 `POST /api/exercise/generate` 生成习题
+5. 学生通过 `GET /api/exercise/list` 获取习题练习
