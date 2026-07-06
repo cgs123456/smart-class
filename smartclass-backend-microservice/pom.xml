@@ -150,10 +150,11 @@
                 <artifactId>fastjson2</artifactId>
                 <version>${fastjson2.version}</version>
             </dependency>
-            <!-- P1-2: Sentinel 依赖管理（Feign 熔断降级）——版本由 spring-cloud-alibaba-dependencies 统一管理，此处仅声明，按需引入 -->
+            <!-- P1-2: Sentinel 依赖管理（Feign 熔断降级） -->
             <dependency>
                 <groupId>com.alibaba.cloud</groupId>
                 <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
             </dependency>
             <!-- P1-3: 链路追踪依赖管理（micrometer-tracing）——后续接入完整链路追踪方案时启用 -->
             <!--

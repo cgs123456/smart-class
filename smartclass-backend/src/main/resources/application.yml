@@ -166,3 +166,21 @@ captcha:
 # 用户默认密码（管理员创建用户时使用）
 user:
   default-password: ${USER_DEFAULT_PASSWORD:Smartclass@2024}
+
+# RAG 课程知识检索配置
+rag:
+  enabled: ${RAG_ENABLED:false}
+  embedding-api-url: ${RAG_EMBEDDING_API_URL:}
+  embedding-api-key: ${RAG_EMBEDDING_API_KEY:}
+  embedding-model: ${RAG_EMBEDDING_MODEL:text-embedding-v3}
+  embedding-dims: ${RAG_EMBEDDING_DIMS:1024}
+  top-k: 3
+  max-content-length: 2000
+
+# AI 习题生成配置
+exercise:
+  enabled: ${EXERCISE_ENABLED:false}
+  # 专门用于习题生成的 AI 分身 ID（需在管理后台创建一个习题生成专用的 Dify 应用）
+  ai-avatar-id: ${EXERCISE_AI_AVATAR_ID:}
+  # 每次生成的题目数量
+  count-per-generate: 5

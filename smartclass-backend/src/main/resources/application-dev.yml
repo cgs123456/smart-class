@@ -5,6 +5,14 @@ spring:
     url: jdbc:mysql://localhost:3306/smart_class
     username: root
     password: ${MYSQL_PASSWORD:123456}
+  # Elasticsearch 配置（开发环境）
+  elasticsearch:
+    uris: http://localhost:9200
+    username:
+    password:
 # 接口文档（开发环境开启）
 knife4j:
   enable: true
+# RAG 课程知识检索（开发环境配置）
+rag:
+  enabled: ${RAG_ENABLED:false}

@@ -1,11 +1,14 @@
 package com.cgs.smartclassbackendintelligence.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.cgs.smartclassbackendintelligence.config.DifyConfig;
 import com.cgs.smartclassbackendintelligence.service.AiAvatarChatHistoryService;
 import com.cgs.smartclassbackendintelligence.service.AiAvatarService;
+import com.cgs.smartclassbackendintelligence.service.CourseRagService;
 import com.cgs.smartclassbackendintelligence.service.DifyService;
+import com.cgs.smartclassbackendintelligence.service.LearningPathService;
 import com.cgs.smartclassbackendintelligence.utils.ChatMessageHelper;
 import com.cgs.smartclassbackendintelligence.utils.OkHttpUtils;
 import com.cgs.smartclassbackendmodel.model.dto.dify.*;
@@ -18,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -51,6 +55,12 @@ public class DifyServiceImpl implements DifyService {
 
     @Resource
     private OkHttpUtils okHttpUtils;
+
+    @Autowired(required = false)
+    private CourseRagService courseRagService;
+
+    @Autowired(required = false)
+    private LearningPathService learningPathService;
 
 
 
@@ -441,7 +451,21 @@ public class DifyServiceImpl implements DifyService {
     private DifyChatRequest buildChatRequest(Long userId, String sessionId, String content) {
         DifyChatRequest chatRequest = new DifyChatRequest();
         chatRequest.setQuery(content);
-        chatRequest.setInputs(new HashMap<>());
+        Map<String, Object> inputs = new HashMap<>();
+        if (courseRagService != null) {
+            String ragContext = courseRagService.retrieveRelevantContent(content, 3);
+            if (StrUtil.isNotBlank(ragContext)) {
+                inputs.put("course_context", ragContext);
+            }
+        }
+        // 新增：用户学习画像注入，供 LLM 个性化推荐"接下来学什么"
+        if (learningPathService != null) {
+            String userProfile = learningPathService.buildUserProfile(userId);
+            if (StrUtil.isNotBlank(userProfile)) {
+                inputs.put("user_profile", userProfile);
+            }
+        }
+        chatRequest.setInputs(inputs);
         chatRequest.setResponse_mode("blocking");
         chatRequest.setUser(difyConfig.getUserPrefix() + userId);
 

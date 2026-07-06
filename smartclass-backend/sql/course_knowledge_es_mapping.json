@@ -1,0 +1,27 @@
+{
+  "aliases": { "course_knowledge": {} },
+  "mappings": {
+    "properties": {
+      "courseId": { "type": "long" },
+      "chapterId": { "type": "long" },
+      "sectionId": { "type": "long" },
+      "title": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart"
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart"
+      },
+      "contentType": { "type": "keyword" },
+      "embedding": {
+        "type": "dense_vector",
+        "dims": 1024,
+        "index": true,
+        "similarity": "cosine"
+      }
+    }
+  }
+}

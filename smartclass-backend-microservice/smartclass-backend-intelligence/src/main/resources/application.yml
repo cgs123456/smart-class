@@ -87,6 +87,20 @@ dify:
   chat-messages-path: /chat-messages
   user-prefix: smartclass_user_
   enable-streaming-verbose-log: false
+# RAG 课程知识检索配置
+rag:
+  enabled: ${RAG_ENABLED:false}
+  embedding-api-url: ${RAG_EMBEDDING_API_URL:}
+  embedding-api-key: ${RAG_EMBEDDING_API_KEY:}
+  embedding-model: ${RAG_EMBEDDING_MODEL:text-embedding-v3}
+  embedding-dims: ${RAG_EMBEDDING_DIMS:1024}
+  top-k: 3
+  max-content-length: 2000
+# AI 习题生成配置
+exercise:
+  enabled: ${EXERCISE_ENABLED:false}
+  ai-avatar-id: ${EXERCISE_AI_AVATAR_ID:}
+  count-per-generate: 5
 # P1-4: Actuator 监控端点（仅暴露 health/info，避免敏感信息泄漏）
 management:
   endpoints:

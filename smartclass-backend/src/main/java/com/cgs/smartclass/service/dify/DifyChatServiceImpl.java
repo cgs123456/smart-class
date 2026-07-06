@@ -6,11 +6,15 @@ import com.cgs.smartclass.model.dto.dify.DifyChatResponse;
 import com.cgs.smartclass.model.dto.dify.DifyStreamChunk;
 import com.cgs.smartclass.model.entity.AiAvatarChatHistory;
 import com.cgs.smartclass.service.AiAvatarChatHistoryService;
+import com.cgs.smartclass.service.CourseRagService;
 import com.cgs.smartclass.service.DifyService;
+import com.cgs.smartclass.service.LearningPathService;
 import com.cgs.smartclass.utils.ChatMessageHelper;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +47,12 @@ public class DifyChatServiceImpl implements DifyChatService {
 
     @Resource
     private DifyHttpHelper difyHttpHelper;
+
+    @Autowired(required = false)
+    private CourseRagService courseRagService;
+
+    @Autowired(required = false)
+    private LearningPathService learningPathService;
 
     @Override
     @Transactional
@@ -373,7 +383,21 @@ public class DifyChatServiceImpl implements DifyChatService {
     private DifyChatRequest buildChatRequest(Long userId, String sessionId, String content) {
         DifyChatRequest chatRequest = new DifyChatRequest();
         chatRequest.setQuery(content);
-        chatRequest.setInputs(new HashMap<>());
+        Map<String, Object> inputs = new HashMap<>();
+        if (courseRagService != null) {
+            String ragContext = courseRagService.retrieveRelevantContent(content, 3);
+            if (StrUtil.isNotBlank(ragContext)) {
+                inputs.put("course_context", ragContext);
+            }
+        }
+        // 用户学习画像注入，供 Dify AI 基于画像推荐"接下来学什么"
+        if (learningPathService != null) {
+            String userProfile = learningPathService.buildUserProfile(userId);
+            if (StrUtil.isNotBlank(userProfile)) {
+                inputs.put("user_profile", userProfile);
+            }
+        }
+        chatRequest.setInputs(inputs);
         chatRequest.setResponse_mode("blocking");
         chatRequest.setUser(difyConfig.getUserPrefix() + userId);
 
