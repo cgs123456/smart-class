@@ -1,0 +1,29 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build单体后端
+        working-directory: smartclass-backend
+        run: mvn -B compile --file pom.xml
+
+      - name: Build微服务后端
+        working-directory: smartclass-backend-microservice
+        run: mvn -B compile --file pom.xml
