@@ -28,7 +28,7 @@ import java.util.List;
  * <p>职责：</p>
  * <ul>
  *   <li>校验请求中的 JWT，无效则直接返回 401</li>
- *   <li>拦截外部对 {@code /api/**/inner/**} 的访问，仅允许内网调用</li>
+ *   <li>拦截外部对内部接口（/inner/）的访问，仅允许内网调用</li>
  *   <li>校验通过后，把 userId / userRole 注入下游请求头，供微服务使用</li>
  * </ul>
  */
