@@ -1,0 +1,13 @@
+package com.smartclass.smartclassbackendpay;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class SmartclassBackendPayApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+
+}

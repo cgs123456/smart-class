@@ -1,0 +1,43 @@
+{
+  "name": "@smartclass/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "智云星课移动端 H5/PWA",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext ts,tsx,vue",
+    "lint:fix": "eslint src --ext ts,tsx,vue --fix",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "vue": "^3.4.38",
+    "vue-router": "^4.4.3",
+    "pinia": "^2.1.7",
+    "@vueuse/core": "^10.11.0",
+    "axios": "^1.7.2",
+    "dayjs": "^1.11.13",
+    "lodash-es": "^4.17.21",
+    "@smartclass/shared": "workspace:*",
+    "@smartclass/api": "workspace:*",
+    "@smartclass/ui": "workspace:*",
+    "@smartclass/stores": "workspace:*",
+    "@smartclass/styles": "workspace:*"
+  },
+  "devDependencies": {
+    "@smartclass/config": "workspace:*",
+    "@vitejs/plugin-vue": "^5.1.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.5",
+    "vue-tsc": "^2.0.29",
+    "workbox-window": "^7.1.0",
+    "@playwright/test": "^1.46.0",
+    "vite-plugin-pwa": "^0.20.0"
+  }
+}

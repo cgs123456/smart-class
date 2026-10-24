@@ -1,0 +1,25 @@
+{
+  "generatorName": "typescript-axios",
+  "inputSpec": "https://gateway.smartclass.cn/v3/api-docs/aggregate",
+  "outputDir": "./src/generated",
+  "configOptions": {
+    "supportsES6": true,
+    "withInterfaces": true,
+    "withSeparateModelsAndApi": true,
+    "modelPropertyNaming": "camelCase",
+    "paramNaming": "camelCase",
+    "enumPropertyNaming": "UPPERCASE",
+    "axiosInstance": "axios",
+    "useSingleRequestParameter": false,
+    "generateFormDataContentType": true,
+    "dateTimeFormat": "iso",
+    "stringEnums": true
+  },
+  "templateDir": "./templates/custom",
+  "additionalProperties": {
+    "npmName": "@smartclass/api",
+    "npmVersion": "1.0.0",
+    "withSeparateModelsAndApi": true,
+    "supportsES6": true
+  }
+}

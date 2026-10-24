@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+package com.smartclass.smartclass.user;
+
+option java_package = "com.smartclass.smartclass.user.proto";
+option java_multiple_files = true;
+option java_outer_classname = "UserProtos";
+
+import "common/common.proto";
+import "google/protobuf/any.proto";
+
+// 用户实体
+message User {
+    int64 id = 1;
+    string user_account = 2;
+    string user_name = 3;
+    string user_avatar = 4;
+    string user_profile = 5;
+    string user_role = 6; // STUDENT, TEACHER, ADMIN, BAN
+    string user_email = 7;
+    string user_phone = 8;
+    int32 user_gender = 9; // 0: MALE, 1: FEMALE, 2: SECRET
+    string province = 10;
+    string city = 11;
+    string district = 12;
+    string wechat_id = 13;
+    string union_id = 14;
+    string mp_open_id = 15;
+    int64 birthday = 16;
+    int64 create_time = 17;
+    int64 update_time = 18;
+    int32 is_delete = 19;
+}
+
+// 用户登录请求
+message UserLoginRequest {
+    string user_account = 1;
+    string user_password = 2;
+}
+
+// 用户注册请求
+message UserRegisterRequest {
+    string user_account = 1;
+    string user_password = 2;
+    string check_password = 3;
+}
+
+// 手机登录请求
+message PhoneLoginRequest {
+    string phone = 1;
+    string code = 2;
+}
+
+// 手机注册请求
+message PhoneRegisterRequest {
+    string phone = 1;
+    string code = 2;
+    string password = 3;
+    string check_password = 4;
+}
+
+// 更新用户请求
+message UpdateUserRequest {
+    int64 id = 1;
+    string user_name = 2;
+    string user_avatar = 3;
+    string user_profile = 4;
+    int32 user_gender = 5;
+    string user_email = 6;
+    string user_phone = 6;
+    string province = 7;
+    string city = 8;
+    string district = 9;
+    string wechat_id = 10;
+    int64 birthday = 11;
+}
+
+// 用户查询请求
+message UserQueryRequest {
+    int64 id = 1;
+    string user_account = 2;
+    string user_name = 3;
+    string user_role = 4;
+    string province = 5;
+    string city = 6;
+    int32 page_current = 7;
+    int32 page_size = 8;
+    string sort_field = 9;
+    string sort_order = 10;
+}
+
+// 用户服务
+service UserService {
+    // 根据ID获取用户
+    rpc getById(common.IdRequest) returns (User);
+    
+    // 批量获取用户
+    rpc listByIds(common.IdsRequest) returns (UserListResponse);
+    
+    // 获取用户VO
+    rpc getUserVOById(common.IdRequest) returns (UserVO);
+    
+    // 获取用户VO列表
+    rpc getUserVOList(UserListRequest) returns (UserVOListResponse);
+    
+    // 更新用户
+    rpc updateById(User) returns (common.BoolResponse);
+    
+    // 用户登录
+    rpc userLogin(UserLoginRequest) returns (common.ApiResponse);
+    
+    // 用户注册
+    rpc userRegister(UserRegisterRequest) returns (common.ApiResponse);
+    
+    // 手机登录
+    rpc phoneLogin(PhoneLoginRequest) returns (common.ApiResponse);
+    
+    // 手机注册
+    rpc phoneRegister(PhoneRegisterRequest) returns (common.ApiResponse);
+    
+    // 获取登录用户
+    rpc getLoginUser(common.Empty) returns (User);
+    
+    // 分页查询用户
+    rpc pageQuery(UserQueryRequest) returns (common.PageResult);
+}
+
+// 用户列表请求
+message UserListRequest {
+    repeated User users = 1;
+}
+
+// 用户列表响应
+message UserListResponse {
+    repeated User users = 1;
+}
+
+// 用户VO
+message UserVO {
+    int64 id = 1;
+    string user_account = 2;
+    string user_name = 3;
+    string user_avatar = 4;
+    string user_profile = 5;
+    string user_role = 6;
+    int32 birthday_year = 7;
+    int64 create_time = 8;
+}
+
+// 用户VO列表响应
+message UserVOListResponse {
+    repeated UserVO users = 1;
+}
+
+// 登录用户VO
+message LoginUserVO {
+    int64 id = 1;
+    string user_account = 2;
+    string user_name = 3;
+    string user_avatar = 4;
+    string user_profile = 5;
+    string user_role = 6;
+}

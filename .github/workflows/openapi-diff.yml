@@ -1,0 +1,53 @@
+name: OpenAPI Breaking Change Check
+
+# P1-5: 当提交的 OpenAPI 规范发生变更时，对比目标分支检测破坏性变更。
+# 规范基线由 scripts/export-openapi.sh 从运行中的服务导出后提交。
+
+on:
+  pull_request:
+    paths:
+      - 'smartclass-backend-microservice/smartclass-backend-api-contracts/openapi/**'
+
+jobs:
+  openapi-diff:
+    name: Detect Breaking API Changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout base branch specs
+        run: |
+          mkdir -p /tmp/base-openapi
+          git show origin/${{ github.base_ref }}:smartclass-backend-microservice/smartclass-backend-api-contracts/openapi 2>/dev/null \
+            | tar -xf - -C /tmp/base-openapi || echo "基线目录不存在（首次运行），跳过对比"
+
+      - name: Detect breaking changes
+        shell: bash
+        run: |
+          BASE_DIR=/tmp/base-openapi
+          PR_DIR=smartclass-backend-microservice/smartclass-backend-api-contracts/openapi
+          if [ -z "$(ls -A $BASE_DIR 2>/dev/null)" ]; then
+            echo "无基线规范，本次仅记录规范文件清单："
+            ls -la "$PR_DIR"
+            exit 0
+          fi
+          FAIL=0
+          for spec in "$PR_DIR"/*.json; do
+            name=$(basename "$spec")
+            base="$BASE_DIR/$name"
+            if [ ! -f "$base" ]; then
+              echo "新增规范: $name"
+              continue
+            fi
+            echo "::group::对比 $name"
+            docker run --rm \
+              -v "$(pwd)":/specs \
+              oasdiff/oasdiff breaking \
+                "/specs/$base" "/specs/$spec" \
+                --format text && echo "无破坏性变更: $name" || { echo "::error file=$name::检测到破坏性 API 变更"; FAIL=1; }
+            echo "::endgroup::"
+          done
+          exit $FAIL

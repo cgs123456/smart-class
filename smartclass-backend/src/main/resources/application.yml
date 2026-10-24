@@ -1,0 +1,208 @@
+# 公共配置文件
+spring:
+  application:
+    name: smartclass-backend
+  # 默认 prod 环境，开发时通过环境变量 SPRING_PROFILES_ACTIVE=dev 显式声明
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:prod}
+  # Spring Boot 3 默认使用 path_pattern_matcher，无需额外配置
+  # session 配置
+  session:
+    # todo 取消注释开启分布式 session（须先配置 Redis）
+    store-type: redis
+    # 30 天过期
+    timeout: 2592000
+    cookie:
+      http-only: true
+      secure: ${COOKIE_SECURE:false}
+      same-site: lax
+  # 数据库配置
+  # todo 需替换配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/smart_class
+    username: root
+    password: ${MYSQL_PASSWORD}
+  # Redis 配置
+  # todo 需替换配置，然后取消注释
+  data:
+    redis:
+      database: 0
+      host: localhost
+      port: 6379
+      timeout: 5000
+      password: ${REDIS_PASSWORD}
+  # Elasticsearch 配置
+  elasticsearch:
+    uris: http://localhost:9200
+    username: 
+    password: 
+  # 文件上传
+  servlet:
+    multipart:
+      # 大小限制
+      max-file-size: 100MB
+      max-request-size: 100MB
+server:
+  address: 0.0.0.0
+  port: 12345
+  servlet:
+    context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete # 全局逻辑删除的实体字段名
+      logic-delete-value: 1 # 逻辑已删除值（默认为 1）
+      logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
+# 微信相关
+wx:
+  # 微信公众平台
+  # todo 需替换配置
+  mp:
+    token: ${WX_MP_TOKEN:}
+    aesKey: ${WX_MP_AES_KEY:}
+    appId: ${WX_MP_APP_ID:}
+    secret: ${WX_MP_SECRET:}
+    config-storage:
+      http-client-type: HttpClient
+      key-prefix: wx
+      redis:
+        host: 127.0.0.1
+        port: 6379
+        password: ${REDIS_PASSWORD}
+      type: Memory
+  # 微信开放平台
+  # todo 需替换配置
+  open:
+    appId: ${WX_OPEN_APP_ID:}
+    appSecret: ${WX_OPEN_APP_SECRET:}
+  # 微信支付
+  pay:
+    sign-key: ${WX_PAY_SIGN_KEY:}
+# 对象存储
+# todo 需替换配置
+cos:
+  client:
+    accessKey: ${COS_ACCESS_KEY:}
+    secretKey: ${COS_SECRET_KEY:}
+    region: 
+    bucket: 
+    # 文件上传配置
+    upload:
+      # 最大上传大小配置（单位：MB）
+      max-avatar-size: 2
+      max-video-size: 100
+      max-document-size: 20
+      max-material-size: 50
+      # 允许的文件类型
+      allowed-video-types: mp4,avi,mov,flv,wmv
+      allowed-document-types: pdf,doc,docx,ppt,pptx,xls,xlsx,txt
+      allowed-material-types: pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,rar,7z
+# 接口文档配置
+knife4j:
+  enable: true
+  openapi:
+    title: "接口文档"
+    version: 1.0
+    group:
+      default:
+        api-rule: package
+        api-rule-resources:
+          - com.smartclass.smartclass.controller
+# Dify API配置
+dify:
+  chat-messages-path: /chat-messages
+  user-prefix: smartclass_user_
+  enable-streaming-verbose-log: false
+  api-key: ${DIFY_API_KEY:}
+  base-url: ${DIFY_BASE_URL:}
+
+# Netty WebSocket服务器配置
+netty:
+  websocket:
+    port: 12346
+    heartbeat-timeout: 60
+    auth-timeout: 10
+    max-connections: 2000
+
+# 日志配置
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId}] [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    com.smartclass.smartclass.service.impl.DifyServiceImpl: info
+    com.smartclass.smartclass.controller.AiAvatarChatController: info
+    com.smartclass.smartclass.netty: debug
+    com.smartclass.smartclass.service.impl.ChatMessageServiceImpl: debug
+
+# Actuator 监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+# Flyway 数据库迁移配置
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    schemas: smart_class
+    baseline-version: 0
+    out-of-order: false
+
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 604800000
+  header: Authorization
+  token-prefix: "Bearer "
+
+# 验证码配置
+captcha:
+  enable: ${CAPTCHA_ENABLE:true}
+
+# 用户默认密码（管理员创建用户时使用）
+user:
+  default-password: ${USER_DEFAULT_PASSWORD:Smartclass@2024}
+
+# RAG 课程知识检索配置
+rag:
+  enabled: ${RAG_ENABLED:false}
+  embedding-api-url: ${RAG_EMBEDDING_API_URL:}
+  embedding-api-key: ${RAG_EMBEDDING_API_KEY:}
+  embedding-model: ${RAG_EMBEDDING_MODEL:text-embedding-v3}
+  embedding-dims: ${RAG_EMBEDDING_DIMS:1024}
+  top-k: 3
+  max-content-length: 2000
+
+# AI 习题生成配置
+exercise:
+  enabled: ${EXERCISE_ENABLED:false}
+  # 专门用于习题生成的 AI 分身 ID（需在管理后台创建一个习题生成专用的 Dify 应用）
+  ai-avatar-id: ${EXERCISE_AI_AVATAR_ID:}
+  # 每次生成的题目数量
+  count-per-generate: 5

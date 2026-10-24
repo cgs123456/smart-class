@@ -1,0 +1,29 @@
+{
+  "name": "@smartclass/admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "智云星课管理后台",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@smartclass/api": "workspace:*",
+    "@smartclass/shared": "workspace:*",
+    "@smartclass/stores": "workspace:*",
+    "@smartclass/ui": "workspace:*",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.38",
+    "vue-router": "^4.4.3"
+  },
+  "devDependencies": {
+    "@smartclass/config": "workspace:*",
+    "@vitejs/plugin-vue": "^5.1.2",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vue-tsc": "^2.0.29"
+  }
+}

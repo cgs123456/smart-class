@@ -1,0 +1,115 @@
+package com.smartclass.smartclass.controller;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.smartclass.smartclass.annotation.AuthCheck;
+import com.smartclass.smartclass.common.BaseResponse;
+import com.smartclass.smartclass.common.ErrorCode;
+import com.smartclass.smartclass.common.PageRequest;
+import com.smartclass.smartclass.common.ResultUtils;
+import com.smartclass.smartclass.constant.UserConstant;
+import com.smartclass.smartclass.exception.BusinessException;
+import com.smartclass.smartclass.model.dto.payment.PaymentOrderCreateRequest;
+import com.smartclass.smartclass.model.entity.User;
+import com.smartclass.smartclass.model.vo.PaymentOrderVO;
+import com.smartclass.smartclass.service.PaymentOrderService;
+import com.smartclass.smartclass.service.UserService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 支付订单接口
+ */
+@RestController
+@RequestMapping("/payment/order")
+@Slf4j
+public class PaymentOrderController {
+
+    @Resource
+    private PaymentOrderService paymentOrderService;
+
+    @Resource
+    private UserService userService;
+
+    /**
+     * 创建订单
+     */
+    @PostMapping("/create")
+    public BaseResponse<PaymentOrderVO> createOrder(@RequestBody PaymentOrderCreateRequest request,
+                                                     HttpServletRequest httpRequest) {
+        User loginUser = userService.getLoginUser(httpRequest);
+        PaymentOrderVO vo = paymentOrderService.createOrder(loginUser.getId(), request);
+        return ResultUtils.success(vo);
+    }
+
+    /**
+     * 支付订单
+     */
+    @PostMapping("/pay")
+    public BaseResponse<PaymentOrderVO> payOrder(@RequestParam String orderNo,
+                                                  HttpServletRequest httpRequest) {
+        User loginUser = userService.getLoginUser(httpRequest);
+        PaymentOrderVO vo = paymentOrderService.payOrder(loginUser.getId(), orderNo);
+        return ResultUtils.success(vo);
+    }
+
+    /**
+     * 取消订单
+     */
+    @PostMapping("/cancel")
+    public BaseResponse<Boolean> cancelOrder(@RequestParam String orderNo,
+                                              HttpServletRequest httpRequest) {
+        User loginUser = userService.getLoginUser(httpRequest);
+        boolean result = paymentOrderService.cancelOrder(loginUser.getId(), orderNo);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 我的订单列表
+     */
+    @GetMapping("/my")
+    public BaseResponse<Page<PaymentOrderVO>> getMyOrders(PageRequest pageRequest,
+                                                           HttpServletRequest httpRequest) {
+        User loginUser = userService.getLoginUser(httpRequest);
+        Page<PaymentOrderVO> page = paymentOrderService.getMyOrders(loginUser.getId(), pageRequest);
+        return ResultUtils.success(page);
+    }
+
+    /**
+     * 订单详情
+     */
+    @GetMapping("/{id}")
+    public BaseResponse<PaymentOrderVO> getOrderById(@PathVariable Long id,
+                                                      HttpServletRequest httpRequest) {
+        User loginUser = userService.getLoginUser(httpRequest);
+        PaymentOrderVO vo = paymentOrderService.getOrderById(loginUser.getId(), id);
+        return ResultUtils.success(vo);
+    }
+
+    /**
+     * 支付回调（无需登录）
+     */
+    @PostMapping("/callback/{channel}")
+    public BaseResponse<Boolean> handleCallback(@PathVariable String channel,
+                                                 @RequestBody Map<String, String> params,
+                                                 HttpServletRequest httpRequest) {
+        // 提取微信支付 X-Wechatpay-* 请求头，去掉前缀并以小写 key 传入服务端验签
+        Map<String, String> headers = new HashMap<>();
+        Enumeration<String> headerNames = httpRequest.getHeaderNames();
+        if (headerNames != null) {
+            while (headerNames.hasMoreElements()) {
+                String name = headerNames.nextElement();
+                if (name != null && name.toLowerCase().startsWith("x-wechatpay-")) {
+                    headers.put(name.toLowerCase().replace("x-wechatpay-", ""), httpRequest.getHeader(name));
+                }
+            }
+        }
+        boolean result = paymentOrderService.handleCallbackWithVerify(channel, params, headers);
+        return ResultUtils.success(result);
+    }
+}

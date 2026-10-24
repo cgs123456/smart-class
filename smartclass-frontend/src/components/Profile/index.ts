@@ -1,0 +1,10 @@
+export { default as UserInfoCard } from './UserInfoCard.vue';
+export { default as StudyStatsGrid } from './StudyStatsGrid.vue';
+export { default as TodayGoals } from './TodayGoals.vue';
+export { default as AchievementWall } from './AchievementWall.vue';
+export { default as RecentLearning } from './RecentLearning.vue';
+export { default as LearningHistory } from './LearningHistory.vue';
+export { default as LogoutButton } from './LogoutButton.vue';
+export { default as ContentTabs } from './ContentTabs.vue';
+export { default as UserPostList } from './UserPostList.vue';
+export { default as UserCommentList } from './UserCommentList.vue';

@@ -1,0 +1,24 @@
+/*
+ * @smartclass/ui 组件库样式入口
+ * 基础变量来自 @smartclass/styles，此处定义组件库自身的通用样式
+ */
+@import '@smartclass/styles/variables.css';
+
+/* 组件库通用样式重置 */
+.sc-ui {
+  --sc-color-primary: var(--sc-primary-color, #409eff);
+  --sc-color-success: var(--sc-success-color, #67c23a);
+  --sc-color-warning: var(--sc-warning-color, #e6a23c);
+  --sc-color-danger: var(--sc-danger-color, #f56c6c);
+  --sc-border-radius: 4px;
+}
+
+/* 统一过渡效果 */
+.sc-fade-enter-active,
+.sc-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.sc-fade-enter-from,
+.sc-fade-leave-to {
+  opacity: 0;
+}

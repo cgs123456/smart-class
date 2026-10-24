@@ -1,0 +1,53 @@
+{
+  "name": "@smartclass/api",
+  "version": "1.0.0",
+  "description": "智云星课 API 客户端 (OpenAPI 生成)",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./generated": {
+      "types": "./dist/generated/index.d.ts",
+      "import": "./dist/generated.mjs",
+      "require": "./dist/generated.js"
+    },
+    "./endpoints": {
+      "types": "./dist/endpoints/index.d.ts",
+      "import": "./dist/endpoints.mjs",
+      "require": "./dist/endpoints.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc --build --force",
+    "dev": "vite build --watch",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "generate": "node ../tools/gen-api.js"
+  },
+  "peerDependencies": {
+    "axios": "^1.7.0"
+  },
+  "dependencies": {
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "@smartclass/shared": "workspace:*",
+    "@smartclass/config": "workspace:*",
+    "@openapitools/openapi-generator-cli": "^2.15.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.5"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.smartclass.cn/"
+  }
+}

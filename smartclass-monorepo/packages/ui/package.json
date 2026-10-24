@@ -1,0 +1,53 @@
+{
+  "name": "@smartclass/ui",
+  "version": "1.0.0",
+  "description": "智云星课通用 UI 组件库",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./styles": "./dist/style.css"
+  },
+  "scripts": {
+    "build": "vite build && tsc --build --force",
+    "dev": "vite build --watch",
+    "lint": "eslint src --ext ts,vue",
+    "lint:fix": "eslint src --ext ts,vue --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0",
+    "pinia": "^2.1.0",
+    "@vueuse/core": "^10.0.0"
+  },
+  "dependencies": {
+    "@smartclass/shared": "workspace:*",
+    "@smartclass/styles": "workspace:*",
+    "@smartclass/stores": "workspace:*",
+    "element-plus": "^2.7.0",
+    "@element-plus/icons-vue": "^2.3.1"
+  },
+  "devDependencies": {
+    "@smartclass/config": "workspace:*",
+    "@storybook/vue3": "^8.2.0",
+    "@storybook/vue3-vite": "^8.2.0",
+    "storybook": "^8.2.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.5",
+    "vue": "^3.4.38",
+    "@vitejs/plugin-vue": "^5.1.2"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.smartclass.cn/"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@smartclass/tsconfig",
+  "version": "1.0.0",
+  "description": "智云星课共享 TypeScript 配置",
+  "main": "index.js",
+  "files": [
+    "base.json",
+    "library.json",
+    "app.json"
+  ],
+  "scripts": {
+    "test": "echo \"tsconfig package - no tests\""
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.smartclass.cn/"
+  }
+}

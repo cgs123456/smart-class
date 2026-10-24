@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package com.smartclass.smartclass.common;
+
+option java_package = "com.smartclass.smartclass.common.proto";
+option java_multiple_files = true;
+option java_outer_classname = "CommonProtos";
+
+// 通用响应包装
+message ApiResponse {
+    int32 code = 1;
+    string message = 2;
+    google.protobuf.Any data = 3;
+    int64 timestamp = 4;
+    string trace_id = 5;
+}
+
+// 分页请求
+message PageRequest {
+    int32 current = 1;
+    int32 page_size = 2;
+    string sort_field = 3;
+    string sort_order = 4; // asc/desc
+}
+
+// 分页响应
+message PageResult {
+    int32 current = 1;
+    int32 page_size = 2;
+    int64 total = 3;
+    int32 pages = 4;
+    repeated google.protobuf.Any records = 5;
+}
+
+// 错误码枚举
+enum ErrorCode {
+    SUCCESS = 0;
+    PARAMS_ERROR = 40000;
+    NOT_LOGIN_ERROR = 40100;
+    NO_AUTH_ERROR = 40101;
+    NOT_FOUND_ERROR = 40400;
+    FORBIDDEN_ERROR = 40300;
+    SYSTEM_ERROR = 50000;
+    OPERATION_ERROR = 50001;
+}
+
+// 基础实体字段
+message BaseEntity {
+    int64 id = 1;
+    int64 create_time = 2;
+    int64 update_time = 3;
+    int32 is_delete = 4;
+}
+
+// 租户上下文
+message TenantContext {
+    string tenant_id = 1;
+    string tier = 2; // SHARED, SCHEMA, DATABASE, DEDICATED
+    repeated string features = 3;
+}

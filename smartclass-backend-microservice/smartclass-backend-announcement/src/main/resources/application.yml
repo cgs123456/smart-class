@@ -1,0 +1,110 @@
+# 公共配置文件
+spring:
+  application:
+    name: smartclass-backend-announcement
+  cloud:
+    nacos:
+      discovery:
+        # P1-6: 通过环境变量注入，避免硬编码
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+  # 默认 dev 环境（生产通过环境变量 SPRING_PROFILES_ACTIVE 切换）
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  # 支持 swagger3
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  # session 配置
+  session:
+    store-type: redis
+    # 30 天过期
+    timeout: 2592000
+  # 数据库配置
+  # todo 需替换配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/smart_class}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD}
+  # Redis 配置
+  # todo 需替换配置，然后取消注释
+  data:
+    redis:
+      database: 0
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      timeout: 5000
+      password: ${REDIS_PASSWORD}
+  # 文件上传
+  servlet:
+    multipart:
+      # 大小限制
+      max-file-size: 100MB
+      max-request-size: 100MB
+server:
+  address: 0.0.0.0
+  port: 10002
+  servlet:
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
+        path: "/"
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete # 全局逻辑删除的实体字段名
+      logic-delete-value: 1 # 逻辑已删除值（默认为 1）
+      logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
+
+knife4j:
+  enable: true
+  openapi:
+    title: "接口文档"
+    version: 1.0
+    group:
+      default:
+        api-rule: package
+        api-rule-resources:
+          - com.smartclass.smartclassbackendannouncement.controller
+# P1-4: Actuator 监控端点（仅暴露 health/info，避免敏感信息泄漏）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+# P1-2/P1-9: Feign 超时配置（避免因下游服务慢导致级联阻塞）
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 2000
+        read-timeout: 5000
+
+# P1-1: Dubbo3 配置 (协议: Triple / 注册中心: Nacos)
+dubbo:
+  application:
+    name: smartclass-backend-announcement
+    qos-port: 22223
+  registry:
+    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+  protocol:
+    name: triple
+    port: 20002
+  config-center:
+    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+  metadata-report:
+    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+  provider:
+    retries: 3
+    timeout: 3000
+  consumer:
+    check: false
+    retries: 2
+    timeout: 5000

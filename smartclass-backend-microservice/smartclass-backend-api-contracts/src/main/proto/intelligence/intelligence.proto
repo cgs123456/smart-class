@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package com.smartclass.smartclass.intelligence;
+
+option java_package = "com.smartclass.smartclass.intelligence.proto";
+option java_multiple_files = true;
+option java_outer_classname = "IntelligenceProtos";
+
+import "common/common.proto";
+import "common/common_types.proto";
+
+// AI 分身实体
+message AiAvatar {
+    int64 id = 1;
+    string name = 2;
+    string description = 3;
+    string avatar_img_url = 4;
+    string category = 5;
+    string model_type = 6;
+    string personality = 7;
+    string abilities = 8;
+    string tags = 9;
+    double rating = 10;
+    int64 usage_count = 11;
+    string base_url = 12;
+    string avatar_auth = 13;
+    int32 status = 14;
+    int32 is_public = 15;
+    int64 creator_id = 16;
+    int64 admin_id = 17;
+    int64 create_time = 18;
+    int64 update_time = 19;
+    int32 is_delete = 20;
+}
+
+// 聊天消息
+message ChatMessage {
+    int64 id = 1;
+    int64 user_id = 2;
+    int64 ai_avatar_id = 3;
+    string session_id = 4;
+    string role = 5; // user, ai
+    string content = 6;
+    string message_id = 7;
+    int32 tokens = 8;
+    int64 create_time = 9;
+}
+
+// 发送聊天消息请求
+message SendChatMessageRequest {
+    int64 ai_avatar_id = 1;
+    string content = 2;
+    string session_id = 3;
+    int64 user_id = 4;
+    string conversation_id = 5;
+}
+
+// 流式聊天请求
+message SendChatMessageStreamingRequest {
+    int64 ai_avatar_id = 1;
+    string content = 2;
+    string session_id = 3;
+    int64 user_id = 4;
+    string conversation_id = 5;
+}
+
+// 聊天响应
+message ChatResponse {
+    string message_id = 1;
+    string content = 2;
+    int32 tokens = 3;
+    bool done = 4;
+}
+
+// 获取 AI 分身列表请求
+message ListAiAvatarRequest {
+    string category = 1;
+    int32 status = 2;
+    int32 is_public = 3;
+    int32 page_current = 4;
+    int32 page_size = 5;
+}
+
+// AI 分身列表响应
+message AiAvatarListResponse {
+    repeated AiAvatar avatars = 1;
+    common.PageResult page = 2;
+}
+
+// 获取聊天历史请求
+message GetChatHistoryRequest {
+    int64 ai_avatar_id = 1;
+    string session_id = 2;
+    int64 user_id = 3;
+    int32 page_current = 4;
+    int32 page_size = 5;
+}
+
+// 聊天历史响应
+message ChatHistoryResponse {
+    repeated ChatMessage messages = 1;
+    common.PageResult page = 2;
+}
+
+// 创建 AI 分身请求
+message CreateAiAvatarRequest {
+    string name = 1;
+    string description = 2;
+    string avatar_img_url = 3;
+    string category = 4;
+    string model_type = 5;
+    string personality = 6;
+    string abilities = 7;
+    string tags = 8;
+    string base_url = 9;
+    string avatar_auth = 10;
+    int32 is_public = 11;
+}
+
+// 更新 AI 分身请求
+message UpdateAiAvatarRequest {
+    int64 id = 1;
+    string name = 2;
+    string description = 3;
+    string avatar_img_url = 4;
+    string category = 5;
+    string model_type = 6;
+    string personality = 7;
+    string abilities = 8;
+    string tags = 9;
+    string base_url = 10;
+    string avatar_auth = 11;
+    int32 status = 12;
+    int32 is_public = 13;
+}
+
+// 智能服务
+service IntelligenceService {
+    // 发送聊天消息 (非流式)
+    rpc sendChatMessage(SendChatMessageRequest) returns (ChatResponse);
+    
+    // 发送聊天消息 (流式)
+    rpc sendChatMessageStreaming(SendChatMessageStreamingRequest) returns (stream ChatResponse);
+    
+    // 获取 AI 分身列表
+    rpc listAiAvatar(ListAiAvatarRequest) returns (AiAvatarListResponse);
+    
+    // 获取 AI 分身详情
+    rpc getAiAvatarById(common.IdRequest) returns (AiAvatar);
+    
+    // 创建 AI 分身
+    rpc createAiAvatar(CreateAiAvatarRequest) returns (AiAvatar);
+    
+    // 更新 AI 分身
+    rpc updateAiAvatar(UpdateAiAvatarRequest) returns (AiAvatar);
+    
+    // 删除 AI 分身
+    rpc deleteAiAvatar(common.IdRequest) returns (common.BoolResponse);
+    
+    // 获取聊天历史
+    rpc getChatHistory(GetChatHistoryRequest) returns (ChatHistoryResponse);
+}

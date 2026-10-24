@@ -1,0 +1,19 @@
+package com.smartclass.smartclassbackendcommon.common;
+
+/**
+ * 删除请求
+ */
+public class DeleteRequest implements java.io.Serializable {
+
+    private Long id;
+
+    private static final long serialVersionUID = 1L;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+}

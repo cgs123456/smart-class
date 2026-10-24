@@ -1,0 +1,43 @@
+{
+  "name": "@smartclass/stores",
+  "version": "1.0.0",
+  "description": "智云星课共享 Pinia Store",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc --build --force",
+    "dev": "vite build --watch",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "pinia": "^2.1.0",
+    "vue": "^3.4.0"
+  },
+  "dependencies": {
+    "@smartclass/shared": "workspace:*",
+    "@smartclass/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@smartclass/config": "workspace:*",
+    "pinia": "^2.1.7",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.5",
+    "vue": "^3.4.38"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.smartclass.cn/"
+  }
+}
