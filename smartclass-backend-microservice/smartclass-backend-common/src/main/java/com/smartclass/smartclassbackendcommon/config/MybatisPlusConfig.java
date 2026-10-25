@@ -3,11 +3,9 @@ package com.smartclass.smartclassbackendcommon.config;
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.config.GlobalConfig;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.smartclass.smartclassbackendcommon.tenant.TenantContextHolder;
-import com.smartclass.smartclassbackendcommon.tenant.TenantLineHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,28 +20,21 @@ import org.springframework.context.annotation.Configuration;
 public class MybatisPlusConfig {
 
     /**
-     * 租户行处理器
-     * 自动为 SQL 添加 tenant_id 过滤条件
-     */
-    @Bean
-    public TenantLineHandler tenantLineHandler() {
-        return new TenantLineHandler();
-    }
-
-    /**
      * MyBatis-Plus 拦截器链
+     *
+     * <p>租户行拦截器（TenantLineInnerInterceptor）暂未启用：当前系统没有任何多租户
+     * 业务消费方（TenantContext 在 common 之外零引用），启用只会给所有 SQL 附加
+     * tenant_id=0 谓词并要求全表加列。待多租户成为真实需求时，连同
+     * gateway 的 TenantResolutionFilter 与 tenant 包一起重新接入。
      */
     @Bean
-    public MybatisPlusInterceptor mybatisPlusInterceptor(TenantLineHandler tenantLineHandler) {
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        // 1. 租户隔离插件 (最先执行，自动添加 tenant_id 条件)
-        interceptor.addInnerInterceptor(new TenantLineInnerInterceptor(tenantLineHandler));
-
-        // 2. 防全表更新/删除插件
+        // 1. 防全表更新/删除插件
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
 
-        // 3. 分页插件
+        // 2. 分页插件
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
 
         return interceptor;

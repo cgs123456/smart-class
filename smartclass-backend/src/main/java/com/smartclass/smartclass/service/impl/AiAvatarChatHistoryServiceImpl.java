@@ -83,59 +83,95 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     
     @Override
     public List<ChatSessionVO> getUserSessions(Long userId, Long aiAvatarId) {
-        // 查询用户与AI分身的所有会话，获取会话ID和名称
+        // 会话分组查询：GROUP BY 与 ORDER BY 聚合兼容（原 DISTINCT+MAX 写法 MySQL 3029 直接报错）
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userId", userId);
-        
+
         if (aiAvatarId != null) {
             queryWrapper.eq("aiAvatarId", aiAvatarId);
         }
-        
-        queryWrapper.select("DISTINCT sessionId, sessionName, aiAvatarId")
+
+        queryWrapper.select("sessionId", "sessionName", "aiAvatarId")
+                .groupBy("sessionId", "sessionName", "aiAvatarId")
                 .orderByDesc("MAX(createTime)");
-        
+
         List<Map<String, Object>> sessionsList = this.listMaps(queryWrapper);
-        
+        if (sessionsList == null || sessionsList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<String> sessionIds = sessionsList.stream()
+                .map(r -> (String) r.get("sessionId"))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // 三组批量查询替代逐会话 selectById/getOne/count 的 N+1
+        Map<String, Long> countMap = new HashMap<>();
+        this.baseMapper.selectMaps(new QueryWrapper<AiAvatarChatHistory>()
+                        .select("sessionId", "COUNT(*) AS cnt")
+                        .eq("userId", userId)
+                        .in("sessionId", sessionIds)
+                        .groupBy("sessionId"))
+                .forEach(m -> {
+                    Object sid = m.get("sessionId");
+                    if (sid != null) {
+                        countMap.put(sid.toString(), ((Number) m.get("cnt")).longValue());
+                    }
+                });
+
+        Map<String, AiAvatarChatHistory> lastMessageMap = new HashMap<>();
+        List<Object> maxIds = this.baseMapper.selectObjs(new QueryWrapper<AiAvatarChatHistory>()
+                .select("MAX(id) AS mid")
+                .eq("userId", userId)
+                .in("sessionId", sessionIds)
+                .groupBy("sessionId"));
+        if (!maxIds.isEmpty()) {
+            List<Long> ids = maxIds.stream()
+                    .filter(Objects::nonNull)
+                    .map(o -> ((Number) o).longValue())
+                    .collect(Collectors.toList());
+            if (!ids.isEmpty()) {
+                this.listByIds(ids).forEach(r -> lastMessageMap.put(r.getSessionId(), r));
+            }
+        }
+
+        Set<Long> avatarIds = sessionsList.stream()
+                .map(r -> (Number) r.get("aiAvatarId"))
+                .filter(Objects::nonNull)
+                .map(Number::longValue)
+                .collect(Collectors.toSet());
+        Map<Long, AiAvatar> avatarMap = avatarIds.isEmpty() ? Collections.emptyMap()
+                : aiAvatarMapper.selectBatchIds(avatarIds).stream()
+                        .collect(Collectors.toMap(AiAvatar::getId, a -> a));
+
         List<ChatSessionVO> result = new ArrayList<>();
-        
         for (Map<String, Object> session : sessionsList) {
             String sessionId = (String) session.get("sessionId");
             if (sessionId == null) {
                 continue;
             }
-            
+
             ChatSessionVO chatSessionVO = new ChatSessionVO();
             chatSessionVO.setSessionId(sessionId);
             chatSessionVO.setSessionName((String) session.get("sessionName"));
-            
-            Long sessionAiAvatarId = (Long) session.get("aiAvatarId");
-            chatSessionVO.setAiAvatarId(sessionAiAvatarId);
-            
-            // 获取AI分身信息
-            AiAvatar aiAvatar = aiAvatarMapper.selectById(sessionAiAvatarId);
-            if (aiAvatar != null) {
-                chatSessionVO.setAiAvatarName(aiAvatar.getName());
-                chatSessionVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
+
+            Number sessionAiAvatarId = (Number) session.get("aiAvatarId");
+            if (sessionAiAvatarId != null) {
+                chatSessionVO.setAiAvatarId(sessionAiAvatarId.longValue());
+                AiAvatar aiAvatar = avatarMap.get(sessionAiAvatarId.longValue());
+                if (aiAvatar != null) {
+                    chatSessionVO.setAiAvatarName(aiAvatar.getName());
+                    chatSessionVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
+                }
             }
-            
-            // 获取会话的最后一条消息
-            QueryWrapper<AiAvatarChatHistory> messageQuery = new QueryWrapper<>();
-            messageQuery.eq("sessionId", sessionId)
-                    .orderByDesc("createTime")
-                    .last("LIMIT 1");
-            
-            AiAvatarChatHistory lastMessage = this.getOne(messageQuery);
+
+            AiAvatarChatHistory lastMessage = lastMessageMap.get(sessionId);
             if (lastMessage != null) {
                 chatSessionVO.setLastMessage(lastMessage.getContent());
                 chatSessionVO.setLastMessageTime(lastMessage.getCreateTime());
             }
-            
-            // 获取会话消息数量
-            QueryWrapper<AiAvatarChatHistory> countQuery = new QueryWrapper<>();
-            countQuery.eq("sessionId", sessionId);
-            long count = this.count(countQuery);
-            chatSessionVO.setMessageCount((int) count);
-            
+            chatSessionVO.setMessageCount(countMap.getOrDefault(sessionId, 0L).intValue());
+
             result.add(chatSessionVO);
         }
         
@@ -244,20 +280,10 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         }
         
         // 获取用户的所有聊天历史记录中每个会话的最新消息
-        QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("userId", userId)
-                .select("MAX(id) as id")
-                .groupBy("sessionId")
-                .orderByDesc("MAX(createTime)");
-        
         // 创建分页对象
         Page<AiAvatarChatHistory> page = new Page<>(current, size);
-        
+
         // 执行自定义SQL查询获取每个会话的最新消息的ID
-        String sql = "SELECT MAX(id) as id FROM ai_avatar_chat_history " +
-                "WHERE userId = " + userId + " GROUP BY sessionId ORDER BY MAX(createTime) DESC " +
-                "LIMIT " + ((current - 1) * size) + ", " + size;
-        
         List<Object> idList = this.baseMapper.selectObjs(
                 new QueryWrapper<AiAvatarChatHistory>().select("MAX(id) as id")
                 .eq("userId", userId)
