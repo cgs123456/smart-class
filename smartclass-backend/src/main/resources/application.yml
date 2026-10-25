@@ -43,6 +43,15 @@ spring:
       # 大小限制
       max-file-size: 100MB
       max-request-size: 100MB
+  # Flyway 数据库迁移配置（建表唯一来源，禁止再用 sql/ 手工脚本）
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    schemas: smart_class
+    baseline-version: 0
+    out-of-order: false
 server:
   address: 0.0.0.0
   port: 12345
@@ -86,6 +95,10 @@ wx:
   # 微信支付
   pay:
     sign-key: ${WX_PAY_SIGN_KEY:}
+
+# 支付行为控制：模拟支付仅开发/测试可开；生产必须 false（订单只能经真实回调激活）
+pay:
+  mock-enabled: ${PAY_MOCK_ENABLED:false}
 # 对象存储
 # todo 需替换配置
 cos:
@@ -154,7 +167,7 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
-prometheus:
+  prometheus:
     metrics:
       export:
         enabled: true
@@ -164,15 +177,6 @@ prometheus:
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
-# Flyway 数据库迁移配置
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    validate-on-migrate: true
-    locations: classpath:db/migration
-    schemas: smart_class
-    baseline-version: 0
-    out-of-order: false
 
 # JWT 配置
 jwt:
@@ -192,6 +196,8 @@ user:
 # RAG 课程知识检索配置
 rag:
   enabled: ${RAG_ENABLED:false}
+  # 启动时全量重建 ES 索引是重型运维动作（拉全表+批量重写+重复 embedding 付费），默认关闭
+  full-sync-on-startup: ${RAG_FULL_SYNC_ON_STARTUP:false}
   embedding-api-url: ${RAG_EMBEDDING_API_URL:}
   embedding-api-key: ${RAG_EMBEDDING_API_KEY:}
   embedding-model: ${RAG_EMBEDDING_MODEL:text-embedding-v3}

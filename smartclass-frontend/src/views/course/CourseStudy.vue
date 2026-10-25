@@ -14,7 +14,7 @@ import { showToast } from 'vant';
 import { CourseStudy } from '../../components/Course';
 import { BackButton } from '../../components/Common';
 import { Course as CourseType } from '../../api/mock.ts';
-import { fetchCourseDetail } from "../../api/fetchCourseDetail.ts";
+import { fetchCourseDetailById } from '../../api/courses.ts';
 
 interface CourseHighlight {
   icon: string;
@@ -37,8 +37,12 @@ const course = ref<EnhancedCourse | null>(null);
 // 获取课程数据
 onMounted(async () => {
   try {
-    // 从mock API获取课程数据
-    const courseData = await fetchCourseDetail(courseId.value);
+    // 从真实接口获取课程数据；课程不存在时直接返回
+    const courseData = await fetchCourseDetailById(courseId.value);
+    if (!courseData) {
+      showToast('课程不存在或已下架');
+      return;
+    }
 
     // 准备课程描述和亮点
     course.value = {

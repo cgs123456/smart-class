@@ -115,9 +115,9 @@ const submittingMap = reactive<Record<string, boolean>>({});
 // 当前正在回复的评论ID
 const activeReplyCommentId = ref<string | null>(null);
 
-<!-- 添加全局点击事件来关闭回复框 -->
-<!-- 改用 stopPropagation 方式：在回复按钮/输入框上阻止事件传播，点击其他区域时关闭 -->
-<!-- 这样避免了 closest() 检测在动态内容中的失效问题 -->
+// 添加全局点击事件来关闭回复框：
+// 改用 stopPropagation 方式——在回复按钮/输入框上阻止事件传播，点击其他区域时关闭，
+// 避免 closest() 检测在动态内容中的失效问题
 
 // 在组件挂载和卸载时设置和移除全局点击事件
 onMounted(setupGlobalClickHandler);

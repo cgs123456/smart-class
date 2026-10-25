@@ -7,6 +7,7 @@ import com.smartclass.smartclassbackendcommon.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.beans.factory.annotation.Value;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -16,6 +17,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +57,14 @@ public class AuthInterceptor {
     private static final String HEADER_USER_ROLE = "X-User-Role";
 
     /**
-     * 标识内部调用的请求头（由网关或 Feign 拦截器写入）。
+     * 内部调用凭证头：X-Internal-Call 只有携带匹配令牌才被采信，
+     * 防止外部直连服务端口伪造内部头绕过鉴权。
+     * 未配置 INTERNAL_CALL_TOKEN 时一律不信任（fail-closed）。
      */
-    private static final String HEADER_INTERNAL_CALL = "X-Internal-Call";
+    private static final String HEADER_INTERNAL_TOKEN = "X-Internal-Token";
+
+    @Value("${INTERNAL_CALL_TOKEN:}")
+    private String internalCallToken;
 
     /**
      * 拦截所有标注 {@link AuthCheck} 的方法。
@@ -78,8 +86,8 @@ public class AuthInterceptor {
         // 获取当前请求
         HttpServletRequest request = currentRequest();
 
-        // 内部调用（Feign / 网关 inner 接口）跳过角色校验
-        if (request != null && "true".equalsIgnoreCase(request.getHeader(HEADER_INTERNAL_CALL))) {
+        // 内部调用（Feign / 网关）跳过角色校验，但必须携带共享令牌
+        if (isTrustedInternalCall(request)) {
             return point.proceed();
         }
 
@@ -132,8 +140,25 @@ public class AuthInterceptor {
                 return role;
             }
         }
-        // 退化为网关注入的请求头
-        return request.getHeader(HEADER_USER_ROLE);
+        // 退化为网关注入的请求头（仅信任携带内部令牌的请求）
+        if (isTrustedInternalCall(request)) {
+            return request.getHeader(HEADER_USER_ROLE);
+        }
+        return null;
+    }
+
+    /**
+     * 校验内部调用凭证：X-Internal-Token 与配置令牌常量时间比较。
+     * 未配置令牌时一律返回 false（fail-closed，内部跳过鉴权能力整体关闭）。
+     */
+    private boolean isTrustedInternalCall(HttpServletRequest request) {
+        if (request == null || StringUtils.isBlank(internalCallToken)) {
+            return false;
+        }
+        String token = request.getHeader(HEADER_INTERNAL_TOKEN);
+        return token != null && MessageDigest.isEqual(
+                internalCallToken.getBytes(StandardCharsets.UTF_8),
+                token.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

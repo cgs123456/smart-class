@@ -3,7 +3,7 @@ import { ProColumns } from '@ant-design/pro-components';
 import '@umijs/max';
 import { message, Modal, Form, Input, Button, DatePicker, InputNumber, Select } from 'antd';
 import React, { useState } from 'react';
-import moment from 'moment';
+import dayjs from 'dayjs';
 
 interface Props {
   visible: boolean;
@@ -49,7 +49,7 @@ const CreateModal: React.FC<Props> = (props) => {
       // 处理日期格式
       let publishDate = values.publishDate;
       if (publishDate) {
-        publishDate = moment(publishDate).format('YYYY-MM-DD');
+        publishDate = dayjs(publishDate).format('YYYY-MM-DD');
       }
       
       // 处理表单数据
@@ -93,7 +93,7 @@ const CreateModal: React.FC<Props> = (props) => {
         layout="vertical"
         initialValues={{
           difficulty: 1,
-          publishDate: moment(),
+          publishDate: dayjs(),
         }}
       >
         <Form.Item

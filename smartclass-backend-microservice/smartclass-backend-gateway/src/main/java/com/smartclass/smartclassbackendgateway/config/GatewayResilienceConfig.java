@@ -51,7 +51,9 @@ public class GatewayResilienceConfig {
 
     // ========== KeyResolver 配置 ==========
 
+    // @Primary：RequestRateLimiter 工厂需要默认 KeyResolver 单例；已认证按用户、匿名按 IP
     @Bean
+    @org.springframework.context.annotation.Primary
     public KeyResolver userIdKeyResolver() {
         return exchange -> {
             String userId = exchange.getRequest().getHeaders().getFirst("X-User-Id");
@@ -157,7 +159,10 @@ public class GatewayResilienceConfig {
     // RedisRateLimiter 采用令牌桶算法: replenishRate 为每秒补充令牌数,
     // burstCapacity 为桶容量。与 Resilience4j RateLimiterConfig 相互独立,
     // 各限流器按业务语义独立取值。
+    // @Primary 必须：RequestRateLimiter 过滤器工厂按单例注入 RateLimiter，
+    // 多个命名限流器并存时缺少主 Bean 会启动失败（expected single matching bean but found 3）
     @Bean
+    @org.springframework.context.annotation.Primary
     public RedisRateLimiter defaultRedisRateLimiter(ReactiveRedisConnectionFactory factory) {
         return new RedisRateLimiter(DEFAULT_REPLENISH_RATE, DEFAULT_BURST_CAPACITY);
     }

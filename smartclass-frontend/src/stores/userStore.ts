@@ -135,6 +135,9 @@ export const useUserStore = defineStore('user', () => {
     return userInfo.value?.userAvatar || DEFAULT_USER_AVATAR;
   };
 
+  // 登录态 = 存在真实用户 id（游客兜底对象只有默认头像、无 id）
+  const isLoggedIn = () => !!userInfo.value?.id;
+
   return {
     userInfo,
     login,
@@ -142,6 +145,7 @@ export const useUserStore = defineStore('user', () => {
     logout,
     fetchCurrentUser,
     getUserAvatar,
+    isLoggedIn,
     DEFAULT_USER_AVATAR,
   };
 });

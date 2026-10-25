@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { mockPopularCourses } from '../../api/mock'
+import { fetchRecommendCourses } from '../../api/courses'
 
 // 轮播图数据接口
 interface Banner {
@@ -62,21 +62,25 @@ const onSwiperChange = (index: number) => {
   console.log('当前轮播图索引:', index)
 }
 
-// 从课程数据中生成轮播图数据
-const generateBannersFromCourses = () => {
-  // 选择最热门的几个课程作为轮播图
-  const selectedCourses = mockPopularCourses
-    .sort((a, b) => b.studentsCount - a.studentsCount)
-    .slice(0, 5) // 取前5个最热门的课程
+// 从真实推荐课程中生成轮播图数据
+const generateBannersFromCourses = async () => {
+  try {
+    // 选择最热门的几个课程作为轮播图
+    const selectedCourses = (await fetchRecommendCourses(5))
+      .sort((a, b) => b.studentsCount - a.studentsCount)
 
-  banners.value = selectedCourses.map((course, index) => ({
-    id: course.id,
-    title: course.title,
-    description: course.brief,
-    imageUrl: course.cover,
-    tag: course.tag,
-    tagColor: course.tagColor
-  }))
+    banners.value = selectedCourses.map((course) => ({
+      id: course.id,
+      title: course.title,
+      description: course.brief,
+      imageUrl: course.cover,
+      tag: course.tag,
+      tagColor: course.tagColor
+    }))
+  } catch (error) {
+    // 轮播加载失败保持为空，不影响首页其他模块
+    console.error('加载轮播课程失败:', error)
+  }
 }
 
 // 组件挂载时生成轮播图数据
@@ -84,6 +88,7 @@ onMounted(() => {
   generateBannersFromCourses()
 })
 </script>
+
 
 <style scoped>
 .banner-carousel {

@@ -6,8 +6,7 @@ import { history, useParams } from '@umijs/max';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+import { safeRehypePlugins } from '@/utils/safeMarkdown';
 import 'katex/dist/katex.min.css';
 import './index.less';
 import { getPostVoByIdUsingGet } from '@/services/backend/postController';
@@ -130,7 +129,7 @@ const PostDetail: React.FC = () => {
           {postData.content ? (
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex, rehypeRaw]}
+              rehypePlugins={[...safeRehypePlugins]}
               components={{
                 code: CodeBlock
               }}

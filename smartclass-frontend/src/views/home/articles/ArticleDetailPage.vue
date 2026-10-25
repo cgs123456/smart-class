@@ -109,21 +109,11 @@ import { formatDate } from '../../../utils/dateUtils';
 import { showToast } from 'vant';
 import { DailyArticleControllerService, DailyArticleFavourControllerService, DailyArticleThumbControllerService } from '../../../services';
 import { BackButton } from '../../../components/Common';
-import MarkdownIt from 'markdown-it';
-import markdownItKatex from 'markdown-it-katex';
-import DOMPurify from 'dompurify';
+import { renderMarkdown } from '../../../utils/markdown';
 import 'katex/dist/katex.min.css';
 
 const route = useRoute();
 const router = useRouter();
-
-// 初始化Markdown解析器
-const md = new MarkdownIt({
-  html: true,
-  breaks: true,
-  linkify: true,
-  typographer: true
-}).use(markdownItKatex);
 
 // 文章ID
 const articleId = computed(() => Number(route.params.id));
@@ -133,23 +123,13 @@ const loading = ref(true);
 const error = ref(false);
 const articleDetail = ref<any>(null);
 
-// 渲染后的Markdown内容
+// 渲染后的Markdown内容（marked+KaTeX 统一管线，含 DOMPurify 清理；失败时降级为换行文本）
 const renderedContent = computed(() => {
   if (!articleDetail.value?.content) return '';
-  
-  try {
-    // 使用markdown-it渲染
-    const rawHtml = md.render(articleDetail.value.content);
-    
-    // 安全处理
-    return DOMPurify.sanitize(rawHtml, {
-      ADD_TAGS: ['math', 'annotation', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac'],
-      ADD_ATTR: ['display', 'data-formula']
-    });
-  } catch (error) {
-    console.error('Markdown渲染失败', error);
-    return articleDetail.value.content.replace(/\n/g, '<br>');
-  }
+  const rendered = renderMarkdown(articleDetail.value.content);
+  return rendered === articleDetail.value.content
+    ? rendered.replace(/\n/g, '<br>')
+    : rendered;
 });
 
 // 初始化页面

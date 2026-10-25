@@ -191,6 +191,23 @@ public class LearningPathServiceImpl implements LearningPathService {
                     new QueryWrapper<UserCourse>().eq("userId", userId).eq("isDelete", 0).eq("status", 1));
             if (CollUtil.isNotEmpty(userCourses)) {
                 purchasedCount = userCourses.size();
+                // 批量化：进度与课程信息各一次查询（原先每门课 2 次查询，N+1）
+                List<Long> courseIds = userCourses.stream()
+                        .map(UserCourse::getCourseId)
+                        .filter(java.util.Objects::nonNull)
+                        .collect(Collectors.toList());
+                Map<Long, List<UserCourseProgress>> progressByCourse = courseIds.isEmpty()
+                        ? java.util.Collections.emptyMap()
+                        : userCourseProgressService.list(new QueryWrapper<UserCourseProgress>()
+                                .eq("userId", userId).in("courseId", courseIds))
+                        .stream()
+                        .filter(pg -> pg.getCourseId() != null)
+                        .collect(Collectors.groupingBy(UserCourseProgress::getCourseId));
+                Map<Long, Course> courseById = courseIds.isEmpty()
+                        ? java.util.Collections.emptyMap()
+                        : courseService.listByIds(courseIds).stream()
+                        .collect(Collectors.toMap(Course::getId, c -> c, (a, b) -> a));
+
                 int progressSum = 0;
                 int courseCountForProgress = 0;
                 for (UserCourse uc : userCourses) {
@@ -198,45 +215,35 @@ public class LearningPathServiceImpl implements LearningPathService {
                     if (courseId == null) {
                         continue;
                     }
-                    // 进度统计
-                    try {
-                        List<UserCourseProgress> progressList = userCourseProgressService.list(
-                                new QueryWrapper<UserCourseProgress>().eq("userId", userId).eq("courseId", courseId));
-                        if (CollUtil.isNotEmpty(progressList)) {
-                            boolean allCompleted = true;
-                            int progSum = 0;
-                            for (UserCourseProgress p : progressList) {
-                                if (p.getIsCompleted() == null || p.getIsCompleted() != 1) {
-                                    allCompleted = false;
-                                }
-                                if (p.getProgress() != null) {
-                                    progSum += p.getProgress();
-                                }
+                    // 进度统计（内存分组结果）
+                    List<UserCourseProgress> progressList = progressByCourse.get(courseId);
+                    if (CollUtil.isNotEmpty(progressList)) {
+                        boolean allCompleted = true;
+                        int progSum = 0;
+                        for (UserCourseProgress p : progressList) {
+                            if (p.getIsCompleted() == null || p.getIsCompleted() != 1) {
+                                allCompleted = false;
                             }
-                            if (allCompleted) {
-                                completedCount++;
+                            if (p.getProgress() != null) {
+                                progSum += p.getProgress();
                             }
-                            int courseProgress = progSum / progressList.size();
-                            progressSum += courseProgress;
-                            courseCountForProgress++;
                         }
-                    } catch (Exception e) {
-                        log.warn("获取课程进度失败, userId={}, courseId={}, msg={}", userId, courseId, e.getMessage());
+                        if (allCompleted) {
+                            completedCount++;
+                        }
+                        progressSum += progSum / progressList.size();
+                        courseCountForProgress++;
                     }
                     // 课程信息（标题、标签、难度）
-                    try {
-                        Course course = courseService.getById(courseId);
-                        if (course != null) {
-                            if (StrUtil.isNotBlank(course.getTitle())) {
-                                purchasedCourseTitles.add(course.getTitle());
-                            }
-                            collectTags(course.getTags(), tagFreq);
-                            if (course.getDifficulty() != null) {
-                                difficultyFreq.merge(course.getDifficulty(), 1, Integer::sum);
-                            }
+                    Course course = courseById.get(courseId);
+                    if (course != null) {
+                        if (StrUtil.isNotBlank(course.getTitle())) {
+                            purchasedCourseTitles.add(course.getTitle());
                         }
-                    } catch (Exception e) {
-                        log.warn("获取课程信息失败, courseId={}, msg={}", courseId, e.getMessage());
+                        collectTags(course.getTags(), tagFreq);
+                        if (course.getDifficulty() != null) {
+                            difficultyFreq.merge(course.getDifficulty(), 1, Integer::sum);
+                        }
                     }
                 }
                 if (courseCountForProgress > 0) {
@@ -254,18 +261,14 @@ public class LearningPathServiceImpl implements LearningPathService {
                     new QueryWrapper<CourseFavourite>().eq("userId", userId));
             if (CollUtil.isNotEmpty(favourites)) {
                 favouriteCount = favourites.size();
-                for (CourseFavourite cf : favourites) {
-                    Long courseId = cf.getCourseId();
-                    if (courseId == null) {
-                        continue;
-                    }
-                    try {
-                        Course course = courseService.getById(courseId);
-                        if (course != null) {
-                            collectTags(course.getTags(), tagFreq);
-                        }
-                    } catch (Exception e) {
-                        log.warn("获取收藏课程信息失败, courseId={}, msg={}", courseId, e.getMessage());
+                // 批量化：一次取出全部收藏课程（原 N+1 逐条 getById）
+                List<Long> favouriteCourseIds = favourites.stream()
+                        .map(CourseFavourite::getCourseId)
+                        .filter(java.util.Objects::nonNull)
+                        .collect(Collectors.toList());
+                if (!favouriteCourseIds.isEmpty()) {
+                    for (Course course : courseService.listByIds(favouriteCourseIds)) {
+                        collectTags(course.getTags(), tagFreq);
                     }
                 }
             }

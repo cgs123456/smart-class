@@ -1,6 +1,7 @@
 package com.smartclass.smartclass.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartclass.smartclass.common.ErrorCode;
@@ -69,6 +70,13 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
     @Value("${alipay.public-key:}")
     private String alipayPublicKey;
 
+    /**
+     * 模拟支付开关。仅开发/测试环境可开；生产必须保持 false，
+     * 订单只能经真实渠道回调（handleCallbackWithVerify 验签通过）激活。
+     */
+    @Value("${pay.mock-enabled:false}")
+    private boolean mockPayEnabled;
+
     @Override
     public PaymentOrderVO createOrder(Long userId, PaymentOrderCreateRequest request) {
         if (userId == null || request == null) {
@@ -132,13 +140,19 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
         if (order.getExpireTime() != null && order.getExpireTime().before(new Date())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "订单已过期");
         }
-        // 模拟支付（实际项目中对接支付宝/微信API）
-        order.setStatus(1);
-        order.setPaymentTime(new Date());
-        order.setTradeNo("SIM_" + System.currentTimeMillis());
-        boolean result = this.updateById(order);
+        // 模拟支付仅限开发/测试环境，生产环境由真实回调激活
+        if (!mockPayEnabled) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付渠道未开放，请通过正式支付渠道完成付款");
+        }
+        // 模拟支付（实际项目中对接支付宝/微信API）；CAS 抢占 status 0→1，防并发重复支付/重复激活
+        boolean result = this.update(new LambdaUpdateWrapper<PaymentOrder>()
+                .eq(PaymentOrder::getId, order.getId())
+                .eq(PaymentOrder::getStatus, 0)
+                .set(PaymentOrder::getStatus, 1)
+                .set(PaymentOrder::getPaymentTime, new Date())
+                .set(PaymentOrder::getTradeNo, "SIM_" + System.currentTimeMillis()));
         if (!result) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付失败");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "订单状态已变更，请刷新后重试");
         }
         // 如果是VIP商品，激活会员
         Product product = productService.getById(order.getProductId());
@@ -165,8 +179,11 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
         if (order.getStatus() != 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "只能取消待支付订单");
         }
-        order.setStatus(2);
-        return this.updateById(order);
+        // CAS 抢占 status 0→2，防与并发支付回调互踩
+        return this.update(new LambdaUpdateWrapper<PaymentOrder>()
+                .eq(PaymentOrder::getId, order.getId())
+                .eq(PaymentOrder::getStatus, 0)
+                .set(PaymentOrder::getStatus, 2));
     }
 
     @Override
@@ -351,14 +368,18 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
             log.info("订单已支付，跳过重复处理，orderNo: {}", orderNo);
             return true;
         }
-        order.setStatus(1);
-        order.setPaymentTime(new Date());
+        // CAS 抢占 status 0→1：并发回调只有一个能走到激活，天然幂等
+        LambdaUpdateWrapper<PaymentOrder> casUpdate = new LambdaUpdateWrapper<PaymentOrder>()
+                .eq(PaymentOrder::getId, order.getId())
+                .eq(PaymentOrder::getStatus, 0)
+                .set(PaymentOrder::getStatus, 1)
+                .set(PaymentOrder::getPaymentTime, new Date());
         if (StringUtils.isNotBlank(tradeNo)) {
-            order.setTradeNo(tradeNo);
+            casUpdate.set(PaymentOrder::getTradeNo, tradeNo);
         }
-        boolean updated = this.updateById(order);
+        boolean updated = this.update(casUpdate);
         if (!updated) {
-            log.error("订单状态更新失败，orderNo: {}", orderNo);
+            log.error("订单状态更新失败（可能被并发回调抢先处理），orderNo: {}", orderNo);
             return false;
         }
         // 如果是 VIP 商品，激活会员

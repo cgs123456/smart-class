@@ -4,7 +4,7 @@ import '@umijs/max';
 import { message, Modal, Form, Input, Button, DatePicker, InputNumber, Select, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import React, { useState } from 'react';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface';
 
 interface Props {
@@ -52,7 +52,7 @@ const CreateModal: React.FC<Props> = (props) => {
       // 处理日期格式
       let publishDate = values.publishDate;
       if (publishDate) {
-        publishDate = moment(publishDate).format('YYYY-MM-DD');
+        publishDate = dayjs(publishDate).format('YYYY-MM-DD');
       }
       
       // 处理表单数据
@@ -132,7 +132,7 @@ const CreateModal: React.FC<Props> = (props) => {
         layout="vertical"
         initialValues={{
           difficulty: 1,
-          publishDate: moment(),
+          publishDate: dayjs(),
           readTime: 120, // 默认2分钟
         }}
       >

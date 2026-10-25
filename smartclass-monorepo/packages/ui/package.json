@@ -45,9 +45,5 @@
     "vitest": "^2.0.5",
     "vue": "^3.4.38",
     "@vitejs/plugin-vue": "^5.1.2"
-  },
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.smartclass.cn/"
   }
 }

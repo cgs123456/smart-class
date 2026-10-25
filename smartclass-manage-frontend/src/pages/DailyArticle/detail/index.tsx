@@ -3,20 +3,24 @@ import { useParams, history } from '@umijs/max';
 import { PageContainer } from '@ant-design/pro-components';
 import { Card, Typography, Divider, Space, Tag, Badge, Skeleton, Button, Statistic, Row, Col, Image } from 'antd';
 import { ArrowLeftOutlined, CalendarOutlined, UserOutlined, TagOutlined, BookOutlined, EyeOutlined, LikeOutlined } from '@ant-design/icons';
+import DOMPurify from 'dompurify';
 import { getDailyArticleVoByIdUsingGet } from '@/services/backend/dailyArticleController';
 import styles from './index.less';
 
 const { Title, Paragraph, Text } = Typography;
 
-// 临时 XSS 防护：移除 script 标签和危险事件属性
+// 文章内容为服务端富文本 HTML，渲染前经 DOMPurify 白名单消毒
 const sanitizeHtml = (html: string): string => {
   if (!html) return '';
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
-    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
-    .replace(/javascript:/gi, '');
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'b', 'i', 'em', 'strong', 'u', 's', 'sub', 'sup', 'blockquote',
+      'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'span', 'div',
+      'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'a', 'figure', 'figcaption',
+      'code', 'pre', 'audio', 'video', 'source',
+    ],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'width', 'height', 'target', 'rel', 'class', 'style', 'controls'],
+  });
 };
 
 /**

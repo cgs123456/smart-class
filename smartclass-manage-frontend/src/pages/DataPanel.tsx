@@ -3,7 +3,7 @@ import { useModel } from '@umijs/max';
 import { Alert, Card, Col, Row, Statistic, Typography, Divider, Table, Progress, Tabs } from 'antd';
 import { FundTwoTone, TeamOutlined, FormOutlined, PlayCircleOutlined, RobotOutlined, BookOutlined, FileTextOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons';
 import React, { useState } from 'react';
-import ReactECharts from 'echarts-for-react';
+import { EChartsReact } from '@/utils/echarts';
 
 const { Title, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -548,7 +548,7 @@ const DataPanel: React.FC = () => {
                   title={<div style={{display: 'flex', alignItems: 'center'}}><TeamOutlined style={{marginRight: 8, color: '#1890ff'}} /> 用户活跃度趋势</div>} 
                   bordered={false}
                 >
-                  <ReactECharts option={userActivityOption} style={{ height: 400 }} />
+                  <EChartsReact option={userActivityOption} style={{ height: 400 }} />
                 </Card>
               </Col>
             </Row>
@@ -579,7 +579,7 @@ const DataPanel: React.FC = () => {
                   title={<div style={{display: 'flex', alignItems: 'center'}}><TeamOutlined style={{marginRight: 8, color: '#722ed1'}} /> 学习时长分布</div>} 
                   bordered={false}
                 >
-                  <ReactECharts option={studyTimeOption} style={{ height: 300 }} />
+                  <EChartsReact option={studyTimeOption} style={{ height: 300 }} />
                 </Card>
               </Col>
             </Row>
@@ -589,7 +589,7 @@ const DataPanel: React.FC = () => {
                   title={<div style={{display: 'flex', alignItems: 'center'}}><TeamOutlined style={{marginRight: 8, color: '#13c2c2'}} /> 周内学习时段分布</div>} 
                   bordered={false}
                 >
-                  <ReactECharts option={weekHeatmapOption} style={{ height: 400 }} />
+                  <EChartsReact option={weekHeatmapOption} style={{ height: 400 }} />
                 </Card>
               </Col>
             </Row>
@@ -601,7 +601,7 @@ const DataPanel: React.FC = () => {
                   title={<div style={{display: 'flex', alignItems: 'center'}}><PlayCircleOutlined style={{marginRight: 8, color: '#eb2f96'}} /> 课程完成率</div>} 
                   bordered={false}
                 >
-                  <ReactECharts option={courseCompletionOption} style={{ height: 400 }} />
+                  <EChartsReact option={courseCompletionOption} style={{ height: 400 }} />
                 </Card>
               </Col>
               <Col xs={24} md={12}>
@@ -639,7 +639,7 @@ const DataPanel: React.FC = () => {
                   title={<div style={{display: 'flex', alignItems: 'center'}}><TeamOutlined style={{marginRight: 8, color: '#13c2c2'}} /> 学科分布分析</div>} 
                   bordered={false}
                 >
-                  <ReactECharts option={subjectDistributionOption} style={{ height: 400 }} />
+                  <EChartsReact option={subjectDistributionOption} style={{ height: 400 }} />
                 </Card>
               </Col>
             </Row>
@@ -649,7 +649,7 @@ const DataPanel: React.FC = () => {
                   title={<div style={{display: 'flex', alignItems: 'center'}}><TeamOutlined style={{marginRight: 8, color: '#eb2f96'}} /> 学科成绩分布</div>} 
                   bordered={false}
                 >
-                  <ReactECharts option={subjectScoreOption} style={{ height: 400 }} />
+                  <EChartsReact option={subjectScoreOption} style={{ height: 400 }} />
                 </Card>
               </Col>
             </Row>

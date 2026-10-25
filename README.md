@@ -359,7 +359,6 @@ smartclass-manage-frontend/
 │   ├── app.tsx                            # 运行时入口（ErrorBoundary 包裹）
 │   ├── access.ts                          # 权限定义（canUser/canAdmin）
 │   ├── requestConfig.ts                   # 请求配置（CSRF 防护）
-│   ├── requestErrorConfig.ts              # 错误处理（ErrorShowType 分级）
 │   ├── components/
 │   │   ├── ErrorBoundary.tsx              # React 错误边界
 │   │   ├── Footer/
@@ -517,7 +516,6 @@ mvn generate-sources -Popenapi     -Dopenapi.inputSpec=smartclass-backend-api-co
 | `app.tsx` | 运行时入口，getInitialState 拉取用户信息，ErrorBoundary 包裹 |
 | `access.ts` | 权限定义，canUser/canAdmin 基于用户角色 |
 | `requestConfig.ts` | 请求配置，CSRF 双重提交防护，401 自动跳登录 |
-| `requestErrorConfig.ts` | 错误处理，按 ErrorShowType 分级提示 |
 | `ErrorBoundary.tsx` | React 错误边界，捕获渲染异常展示 500 页面 |
 | `routes.ts` | 路由表，声明式权限守卫（access 字段） |
 | `DataPanel.tsx` | 数据看板，ECharts 多维度可视化 |
@@ -598,7 +596,7 @@ mysql -u root -p smart_class < smartclass-backend/sql/create_table.sql
 export SPRING_PROFILES_ACTIVE=dev
 export MYSQL_PASSWORD=your_password
 export REDIS_PASSWORD=your_redis_password
-export JWT_SECRET=your_jwt_secret_at_least_32_bytes
+export JWT_SECRET="change-me-openssl-rand-hex-32"
 export COS_ACCESS_KEY=your_cos_key
 export COS_SECRET_KEY=your_cos_secret
 export WX_MP_TOKEN=your_wx_token

@@ -4,11 +4,13 @@ import com.smartclass.smartclassbackendmodel.model.entity.User;
 import com.smartclass.smartclassbackendserviceclient.dubbo.UserDubboService;
 import com.smartclass.smartclassbackendmodel.model.vo.UserVO;
 import com.smartclass.smartclassbackenduserservice.service.UserService;
+import com.smartclass.smartclassbackenduserservice.service.UserVipService;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户 Dubbo 服务实现
@@ -27,9 +29,12 @@ public class UserDubboServiceImpl implements UserDubboService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserVipService userVipService;
+
     @Override
     public User getById(Long id) {
-        return userService.getById(id);
+        return desensitize(userService.getById(id));
     }
 
     @Override
@@ -44,11 +49,32 @@ public class UserDubboServiceImpl implements UserDubboService {
 
     @Override
     public List<User> listByIds(Collection<Long> userIds) {
-        return userService.listByIds(userIds);
+        return userService.listByIds(userIds).stream()
+                .map(this::desensitize)
+                .collect(Collectors.toList());
     }
 
     @Override
     public boolean updateById(User user) {
+        // 内部通道禁止改凭证与角色，防消费端经此提权/改密
+        user.setUserPassword(null);
+        user.setUserRole(null);
+        user.setUserAccount(null);
         return userService.updateById(user);
+    }
+
+    @Override
+    public boolean activateVip(Long userId, String level, int durationDays, Long paymentOrderId) {
+        return userVipService.activateVip(userId, level, durationDays, paymentOrderId);
+    }
+
+    /**
+     * 跨服务返回前抹掉密码哈希；MyBatis-Plus updateById 忽略 null 字段，不影响后续编辑用途
+     */
+    private User desensitize(User user) {
+        if (user != null) {
+            user.setUserPassword(null);
+        }
+        return user;
     }
 }

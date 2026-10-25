@@ -1,6 +1,7 @@
 # P1-5: 智云星课微服务编排框架
 # 用法：docker compose up -d <服务名> 或 docker compose up -d 启动全部
-# 注意：本编排为框架示例，实际使用前请根据环境调整镜像版本、网络、卷与端口。
+# 安全基线：仅网关 8101 对外；基础设施端口只绑 127.0.0.1；业务服务不出容器网络。
+# 必填密钥（MYSQL_ROOT_PASSWORD / JWT_SECRET / INTERNAL_CALL_TOKEN）缺失时 compose 直接报错。
 # 各服务默认使用内置 profile=prod，敏感配置通过环境变量注入（参考 .env 文件）。
 
 version: "3.8"
@@ -11,11 +12,11 @@ services:
     image: mysql:8.0
     container_name: smartclass-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 设置 MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: smart_class
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     networks:
@@ -30,7 +31,7 @@ services:
     image: redis:7-alpine
     container_name: smartclass-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -49,8 +50,8 @@ services:
       JVM_XMS: 512m
       JVM_XMX: 512m
     ports:
-      - "8848:8848"
-      - "9848:9848"
+      - "127.0.0.1:8848:8848"
+      - "127.0.0.1:9848:9848"
     networks:
       - smartclass-net
     healthcheck:
@@ -67,7 +68,7 @@ services:
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     volumes:
       - es-data:/usr/share/elasticsearch/data
     networks:
@@ -90,7 +91,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - NACOS_ADDR=nacos:8848
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:?请在 .env 设置 JWT_SECRET（不少于 32 字节）}
+      - INTERNAL_CALL_TOKEN=${INTERNAL_CALL_TOKEN:?请在 .env 设置 INTERNAL_CALL_TOKEN}
       - KNIFE4J_ENABLE=false
     ports:
       - "8101:8101"
@@ -115,12 +117,11 @@ services:
       - REDIS_HOST=redis
       - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
       - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 设置 MYSQL_ROOT_PASSWORD}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:?请在 .env 设置 JWT_SECRET（不少于 32 字节）}
       - WX_REDIS_HOST=redis
-    ports:
-      - "10001:10001"
+      - INTERNAL_CALL_TOKEN=${INTERNAL_CALL_TOKEN:?请在 .env 设置 INTERNAL_CALL_TOKEN}
     networks:
       - smartclass-net
 
@@ -142,10 +143,10 @@ services:
       - REDIS_HOST=redis
       - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
       - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 设置 MYSQL_ROOT_PASSWORD}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-    ports:
-      - "10002:10002"
+      - INTERNAL_CALL_TOKEN=${INTERNAL_CALL_TOKEN:?请在 .env 设置 INTERNAL_CALL_TOKEN}
+      - PAY_MOCK_ENABLED=${PAY_MOCK_ENABLED:-false}
     networks:
       - smartclass-net
 
@@ -162,8 +163,6 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10003:10003"
     networks:
       - smartclass-net
 
@@ -180,8 +179,6 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10004:10004"
     networks:
       - smartclass-net
 
@@ -198,8 +195,6 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10005:10005"
     networks:
       - smartclass-net
 
@@ -221,11 +216,10 @@ services:
       - REDIS_HOST=redis
       - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
       - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:?请在 .env 设置 MYSQL_ROOT_PASSWORD}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - WX_REDIS_HOST=redis
-    ports:
-      - "10006:10006"
+      - INTERNAL_CALL_TOKEN=${INTERNAL_CALL_TOKEN:?请在 .env 设置 INTERNAL_CALL_TOKEN}
     networks:
       - smartclass-net
 
@@ -242,8 +236,6 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10007:10007"
     networks:
       - smartclass-net
 
@@ -260,8 +252,6 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10008:10008"
     networks:
       - smartclass-net
 
@@ -278,37 +268,9 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10009:10009"
     networks:
       - smartclass-net
 
-  stats:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        SERVICE_DIR: smartclass-backend-stats
-    image: smartclass/stats:latest
-    container_name: smartclass-stats
-    depends_on:
-      - mysql
-      - redis
-      - nacos
-      - elasticsearch
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - NACOS_ADDR=nacos:8848
-      - REDIS_HOST=redis
-      - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
-      - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - ES_URIS=http://elasticsearch:9200
-    ports:
-      - "10013:10013"
-    networks:
-      - smartclass-net
 
   learn-schedule:
     build:
@@ -323,37 +285,9 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10014:10014"
     networks:
       - smartclass-net
 
-  search:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        SERVICE_DIR: smartclass-backend-search
-    image: smartclass/search:latest
-    container_name: smartclass-search
-    depends_on:
-      - mysql
-      - redis
-      - nacos
-      - elasticsearch
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - NACOS_ADDR=nacos:8848
-      - REDIS_HOST=redis
-      - MYSQL_URL=jdbc:mysql://mysql:3306/smart_class
-      - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - ES_URIS=http://elasticsearch:9200
-    ports:
-      - "10012:10012"
-    networks:
-      - smartclass-net
 
   pay:
     build:
@@ -368,8 +302,6 @@ services:
       - redis
       - nacos
     environment: *service-env
-    ports:
-      - "10011:10011"
     networks:
       - smartclass-net
 

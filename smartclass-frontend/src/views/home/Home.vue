@@ -109,11 +109,11 @@ import {
   BannerCarousel,
 } from '../../components/Home';
 import {
-  mockPopularCourses,
   type Course,
   type Notice,
   type Article,
 } from '../../api/mock.ts';
+import { fetchRecommendCourses } from '../../api/courses.ts';
 import { useUserStore } from '../../stores/userStore.ts';
 import {
   AiAvatarControllerService,
@@ -250,8 +250,16 @@ const fetchNotices = async () => {
   }
 };
 
-// 设置热门课程数据
-const popularCourses = ref<Course[]>(mockPopularCourses);
+// 设置热门课程数据（真实接口异步加载，失败保持为空，不打断首页其余模块）
+const popularCourses = ref<Course[]>([]);
+
+const fetchPopularCourses = async () => {
+  try {
+    popularCourses.value = await fetchRecommendCourses(6);
+  } catch (error) {
+    console.error('加载推荐课程失败:', error);
+  }
+};
 
 // 筛选热门课程（选取每个学科中最热门的课程）
 const filteredPopularCourses = computed<Course[]>(() => {
@@ -582,11 +590,8 @@ const initLazyLoading = () => {
   observer?.disconnect();
   observer = null;
   
-  // 创建Intersection
-<tool_call>
-<function=bash>
-<parameter=command>
-cd /home/user && head -20 D:\Desktop\智云端
+  // 创建 IntersectionObserver 实例
+  observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -649,6 +654,7 @@ onMounted(async () => {
   fetchNotices(); // 获取公告数据
   fetchDailyWord(); // 获取今日单词数据
   fetchTodayArticles(); // 获取今日美文数据
+  fetchPopularCourses(); // 获取热门课程数据
   
   // 等待DOM渲染完成后初始化懒加载
   await nextTick();

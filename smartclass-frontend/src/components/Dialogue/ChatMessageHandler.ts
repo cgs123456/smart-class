@@ -1,8 +1,6 @@
 import { ref } from 'vue';
 import { showToast } from 'vant';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
-import katex from 'katex';
+import { renderMarkdown } from '../../utils/markdown';
 import { OpenAPI } from '../../services';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useUserStore } from '../../stores/userStore';
@@ -42,112 +40,8 @@ export function useChatMessages(assistant: Assistant) {
   let currentEventSource: EventSource | null = null;
   let currentStreamController: AbortController | null = null;
 
-  // 配置DOMPurify允许KaTeX相关标签和属性
-  DOMPurify.addHook('afterSanitizeAttributes', function (node) {
-    // 如果是KaTeX生成的元素，保留所有属性
-    if (
-      node.classList &&
-      (node.classList.contains('katex') ||
-        node.classList.contains('katex-html') ||
-        node.classList.contains('katex-mathml'))
-    ) {
-      node.setAttribute('data-katex-processed', 'true');
-    }
-  });
-
-  // 格式化消息内容（处理Markdown和LaTeX）
-  const formatMessage = (content: string): string => {
-    try {
-      // 处理块级公式 $$...$$
-      let processedContent = content.replace(
-        /\$\$([\s\S]+?)\$\$/g,
-        (match, formula) => {
-          try {
-            return `<div class="katex-block">${katex.renderToString(
-              formula.trim(),
-              {
-                displayMode: true,
-                throwOnError: false,
-              },
-            )}</div>`;
-          } catch (err) {
-            console.error('LaTeX块级公式解析错误:', err);
-            return match;
-          }
-        },
-      );
-
-      // 处理行内公式 $...$，但排除可能的货币符号 ($10, 10$等)
-      const inlineFormulaRegex = /\$([^$\n]+?)\$/g;
-      processedContent = processedContent.replace(
-        inlineFormulaRegex,
-        (match, formula) => {
-          // 检查是否为货币符号
-          if (/^\$\d/.test(match) || /\d\$$/.test(match)) {
-            return match;
-          }
-
-          try {
-            return katex.renderToString(formula.trim(), {
-              displayMode: false,
-              throwOnError: false,
-            });
-          } catch (err) {
-            console.error('LaTeX行内公式解析错误:', err);
-            return match;
-          }
-        },
-      );
-
-      // 使用Marked解析Markdown
-      const html = marked.parse(processedContent, { async: false });
-
-      // 配置DOMPurify
-      const purifyConfig = {
-        ADD_TAGS: [
-          'math',
-          'mrow',
-          'mi',
-          'mo',
-          'mn',
-          'msup',
-          'msub',
-          'mfrac',
-          'mspace',
-          'mtext',
-          'annotation',
-          'semantics',
-          'svg',
-          'line',
-          'path',
-          'g',
-        ],
-        ADD_ATTR: [
-          'xlink:href',
-          'href',
-          'fill',
-          'stroke',
-          'stroke-width',
-          'stroke-linecap',
-          'stroke-linejoin',
-          'd',
-          'width',
-          'height',
-          'viewBox',
-          'style',
-          'data-katex-processed',
-          'class',
-        ],
-        ALLOW_DATA_ATTR: true,
-      };
-
-      // 净化HTML防止XSS攻击
-      return DOMPurify.sanitize(html, purifyConfig);
-    } catch (error) {
-      console.error('内容解析失败:', error);
-      return content;
-    }
-  };
+  // 格式化消息内容（处理Markdown和LaTeX，统一管线见 utils/markdown）
+  const formatMessage = (content: string): string => renderMarkdown(content);
 
   // 添加欢迎消息
   const addWelcomeMessage = () => {

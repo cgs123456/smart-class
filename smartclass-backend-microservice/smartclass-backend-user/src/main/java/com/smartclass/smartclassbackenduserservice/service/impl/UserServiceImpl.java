@@ -40,6 +40,13 @@ import static com.smartclass.smartclassbackendcommon.constant.UserConstant.USER_
 @Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
+    /**
+     * 与网关共享的内部调用令牌；仅当请求携带匹配令牌时才采信 X-User-Id。
+     */
+    @org.springframework.beans.factory.annotation.Value("${INTERNAL_CALL_TOKEN:}")
+    private String internalCallToken;
+
+
 
     private final ConcurrentHashMap<String, Object> registerLockMap = new ConcurrentHashMap<>();
 
@@ -212,6 +219,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
         // 3. 记录用户的登录态
+        user.setUserPassword(null);
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
         // 4. 签发 JWT
         return this.getLoginUserVO(user);
@@ -239,6 +247,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
         // 3. 记录用户的登录态
+        user.setUserPassword(null);
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
         // 4. 签发 JWT
         return this.getLoginUserVO(user);
@@ -286,7 +295,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 }
 
                 // 记录用户的登录态
-                request.getSession().setAttribute(USER_LOGIN_STATE, user);
+                user.setUserPassword(null);
+        request.getSession().setAttribute(USER_LOGIN_STATE, user);
                 return getLoginUserVO(user);
 
             } finally {
@@ -302,11 +312,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * @param request
      * @return
      */
+    /**
+     * 网关注入的调用方身份仅在共享内部令牌校验通过时采信，
+     * 防止外部直接伪造 X-User-Id 头绕过鉴权。
+     */
+    private User resolveTrustedGatewayUser(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String presented = request.getHeader("X-Internal-Token");
+        if (internalCallToken == null || internalCallToken.isEmpty() || presented == null || presented.isEmpty()) {
+            return null;
+        }
+        boolean trusted = java.security.MessageDigest.isEqual(
+                internalCallToken.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                presented.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (!trusted) {
+            return null;
+        }
+        String id = request.getHeader("X-User-Id");
+        if (id == null || id.isBlank()) {
+            return null;
+        }
+        try {
+            return this.getById(Long.parseLong(id.trim()));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        // 先判断是否已登录
+        // 先判断是否已登录（session），网关 JWT 链路下回退到可信 X-User-Id
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
+        if (currentUser == null || currentUser.getId() == null) {
+            currentUser = resolveTrustedGatewayUser(request);
+        }
         if (currentUser == null || currentUser.getId() == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
@@ -327,9 +369,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public User getLoginUserPermitNull(HttpServletRequest request) {
-        // 先判断是否已登录
+        // 先判断是否已登录（session），网关 JWT 链路下回退到可信 X-User-Id
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
+        if (currentUser == null || currentUser.getId() == null) {
+            currentUser = resolveTrustedGatewayUser(request);
+        }
         if (currentUser == null || currentUser.getId() == null) {
             return null;
         }

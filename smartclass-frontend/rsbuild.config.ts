@@ -1,5 +1,7 @@
 import { defineConfig } from '@rsbuild/core';
 import { pluginVue } from '@rsbuild/plugin-vue';
+import Components from 'unplugin-vue-components/rspack';
+import { VantResolver } from '@vant/auto-import-resolver';
 import type { RsbuildConfig } from '@rsbuild/core';
 
 export default defineConfig({
@@ -15,6 +17,26 @@ export default defineConfig({
     favicon: './public/logo.svg',
   },
   tools: {
+    // Vant 按需引入：模板中的 <van-*> 自动注册组件与样式，替代 main.ts 全量注册
+    rspack: {
+      plugins: [Components({ resolvers: [VantResolver()] })],
+      optimization: {
+        splitChunks: {
+          // 无此分组时，多个路由 chunk 会各自内联所用 Vant 组件样式，
+          // 同一样式被复制到每个页面（实测 440 个选择器重复 4500+ 次）
+          cacheGroups: {
+            vant: {
+              test: /[\\/]node_modules[\\/]vant[\\/]/,
+              name: 'vant',
+              chunks: 'all',
+              priority: 20,
+              enforce: true,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      },
+    },
     swc: {
       jsc: {
         minify: {

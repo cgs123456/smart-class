@@ -69,12 +69,9 @@ export const MessageRole = {
 
 export type MessageRole = typeof MessageRole[keyof typeof MessageRole];
 
-// 存储键
+// 存储键（认证走后端 Session Cookie，本地无令牌，仅缓存展示信息）
 export const StorageKey = {
-  TOKEN: 'smartclass_token',
-  REFRESH_TOKEN: 'smartclass_refresh_token',
   USER_INFO: 'smartclass_user_info',
-  TENANT_ID: 'smartclass_tenant_id',
   THEME: 'smartclass_theme',
   LANGUAGE: 'smartclass_language',
   SIDEBAR_COLLAPSED: 'smartclass_sidebar_collapsed'

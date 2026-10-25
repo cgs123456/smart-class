@@ -131,14 +131,14 @@ dubbo:
     name: smartclass-backend-dailyword
     qos-port: 22226
   registry:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   protocol:
     name: triple
     port: 20005
   config-center:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   metadata-report:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   provider:
     retries: 3
     timeout: 3000

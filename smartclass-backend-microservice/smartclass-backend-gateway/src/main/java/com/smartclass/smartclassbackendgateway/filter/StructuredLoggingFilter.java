@@ -102,17 +102,19 @@ public class StructuredLoggingFilter implements GlobalFilter, Ordered {
         // HTTP 信息
         log.put("method", request.getMethod() != null ? request.getMethod().name() : "UNKNOWN");
         log.put("path", request.getPath().value());
-        log.put("query", request.getURI().getRawQuery());
+        putIfPresent(log, "query", request.getURI().getRawQuery());
         log.put("protocol", "HTTP/1.1"); // 网关层通常是 HTTP/1.1
         
         // 客户端信息
         log.put("client_ip", clientIp);
-        log.put("user_agent", request.getHeaders().getFirst(HttpHeaders.USER_AGENT));
-        
+        // 可选头可能不存在：ConcurrentHashMap 不接受 null 值，缺失头必须跳过或占位，
+        // 否则任何未携带这些头的请求（curl 无 UA、未认证无 X-User-Id）都会 500
+        putIfPresent(log, "user_agent", request.getHeaders().getFirst(HttpHeaders.USER_AGENT));
+
         // 用户上下文 (从鉴权 Filter 注入)
-        log.put("user_id", request.getHeaders().getFirst("X-User-Id"));
-        log.put("user_role", request.getHeaders().getFirst("X-User-Role"));
-        log.put("tenant_id", request.getHeaders().getFirst("X-Tenant-Id"));
+        putIfPresent(log, "user_id", request.getHeaders().getFirst("X-User-Id"));
+        putIfPresent(log, "user_role", request.getHeaders().getFirst("X-User-Role"));
+        putIfPresent(log, "tenant_id", request.getHeaders().getFirst("X-Tenant-Id"));
         
         // 头信息 (脱敏)
         Map<String, Object> headers = new ConcurrentHashMap<>();
@@ -229,5 +231,10 @@ public class StructuredLoggingFilter implements GlobalFilter, Ordered {
     public int getOrder() {
         // 在鉴权之后、限流/熔断之前记录日志
         return -90;
+    }
+    private void putIfPresent(java.util.Map<String, Object> map, String key, String value) {
+        if (value != null) {
+            map.put(key, value);
+        }
     }
 }

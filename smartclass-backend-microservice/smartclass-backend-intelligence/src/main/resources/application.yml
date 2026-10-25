@@ -125,14 +125,14 @@ dubbo:
     name: smartclass-backend-intelligence
     qos-port: 22230
   registry:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   protocol:
     name: triple
     port: 20009
   config-center:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   metadata-report:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   provider:
     retries: 3
     timeout: 3000

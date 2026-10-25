@@ -28,7 +28,8 @@ create table if not exists user
     createTime   datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime   datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete     tinyint      default 0                 not null comment '是否删除',
-    index idx_unionId (unionId)
+    unique index uk_user_account (userAccount),
+    unique index uk_unionId (unionId)
 ) comment '用户' collate = utf8mb4_unicode_ci;
 
 -- 帖子表
@@ -60,7 +61,7 @@ create table if not exists post_thumb
     userId     bigint                             not null comment '创建用户 id',
     createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    index idx_postId (postId),
+    unique index uk_post_user (postId, userId),
     index idx_userId (userId)
 ) comment '帖子点赞';
 
@@ -72,7 +73,7 @@ create table if not exists post_favour
     userId     bigint                             not null comment '创建用户 id',
     createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    index idx_postId (postId),
+    unique index uk_post_user (postId, userId),
     index idx_userId (userId)
 ) comment '帖子收藏';
 

@@ -53,3 +53,14 @@ export const convertDifficultyToText = (difficulty: number | string): string => 
 
   return difficultyMap[difficulty] || '未知';
 };
+
+// 根据难度文本返回对应的修饰类名（初级/中级/高级/未知）
+export const getDifficultyClass = (difficultyText: string): string => {
+  const classMap: Record<string, string> = {
+    初级: 'difficulty-easy',
+    中级: 'difficulty-medium',
+    高级: 'difficulty-hard',
+  };
+
+  return classMap[difficultyText] || 'difficulty-unknown';
+};

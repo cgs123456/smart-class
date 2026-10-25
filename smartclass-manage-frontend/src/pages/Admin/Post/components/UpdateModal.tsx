@@ -6,8 +6,7 @@ import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+import { safeRehypePlugins } from '@/utils/safeMarkdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coldarkCold } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
@@ -222,7 +221,7 @@ const UpdateModal: React.FC<Props> = (props) => {
                 {markdownContent ? (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex, rehypeRaw]}
+                    rehypePlugins={[...safeRehypePlugins]}
                     components={{
                       code: CodeBlock
                     }}

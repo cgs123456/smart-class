@@ -26,6 +26,12 @@ public class SmartclassCommonAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public InternalIdentityHolder internalIdentityHolder() {
+        return new InternalIdentityHolder();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public AuthInterceptor authInterceptor() {
         return new AuthInterceptor();
     }

@@ -2,8 +2,3 @@ packages:
   - apps/*
   - packages/*
   - tools/*
-
-# 只对外发布的包
-publishConfig:
-  access: restricted
-  registry: https://npm.smartclass.cn/

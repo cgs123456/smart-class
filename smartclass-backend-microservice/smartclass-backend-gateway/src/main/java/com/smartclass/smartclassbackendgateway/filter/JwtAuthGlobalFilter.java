@@ -8,7 +8,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.http.HttpHeaders;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -39,6 +39,13 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final GatewayJwtUtil jwtUtil;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    /**
+     * 与各微服务共享的内部调用令牌；网关转发时注入，
+     * 下游仅凭此令牌信任 X-User-Role 等网关注入头。
+     */
+    @Value("${INTERNAL_CALL_TOKEN:}")
+    private String internalCallToken;
 
     public JwtAuthGlobalFilter(GatewayJwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
@@ -107,13 +114,19 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         // 4. 把 userId / userRole 注入下游请求头（去除外部传入的伪造值，防止越权）
         Long userId = jwtUtil.extractUserId(claims);
         String userRole = jwtUtil.extractUserRole(claims);
-        ServerHttpRequest mutated = request.mutate()
+        ServerHttpRequest.Builder requestBuilder = request.mutate()
+                // 剥离外部伪造的内部头
+                .headers(headers -> {
+                    headers.remove("X-Internal-Call");
+                    headers.remove("X-Internal-Token");
+                })
                 .header("X-User-Id", userId == null ? "" : String.valueOf(userId))
-                .header("X-User-Role", userRole == null ? "" : userRole)
-                .build();
-        // 移除外部可能伪造的内部头（防御性，避免被下游信任）
-        HttpHeaders headers = mutated.getHeaders();
-        headers.remove("X-Internal-Call");
+                .header("X-User-Role", userRole == null ? "" : userRole);
+        // 携带共享内部令牌，下游据此采信网关注入头
+        if (!internalCallToken.isEmpty()) {
+            requestBuilder.header("X-Internal-Token", internalCallToken);
+        }
+        ServerHttpRequest mutated = requestBuilder.build();
 
         return chain.filter(exchange.mutate().request(mutated).build());
     }

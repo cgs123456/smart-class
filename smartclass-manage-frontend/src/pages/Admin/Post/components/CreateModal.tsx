@@ -6,8 +6,7 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+import { safeRehypePlugins } from '@/utils/safeMarkdown';
 import { coldarkCold } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
@@ -212,7 +211,7 @@ const CreateModal: React.FC<Props> = (props) => {
                 {markdownContent ? (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex, rehypeRaw]}
+                    rehypePlugins={[...safeRehypePlugins]}
                     components={{
                       code: CodeBlock
                     }}

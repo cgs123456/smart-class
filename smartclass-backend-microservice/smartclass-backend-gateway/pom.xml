@@ -11,6 +11,7 @@
     <name>smartclass-backend-gateway</name>
     <description>smartclass-backend-gateway</description>
     <properties>
+        <spring-boot.repackage.skip>false</spring-boot.repackage.skip>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -70,6 +71,12 @@
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-reactor</artifactId>
         </dependency>
+        <!-- CircuitBreaker 网关过滤器的实际提供方：没有它，路由里的 - CircuitBreaker
+             会在启动装载路由时抛 Unable to find GatewayFilterFactory with name CircuitBreaker -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+        </dependency>
 
         <!-- P1-2: 结构化日志 - Logstash Logback Encoder -->
         <dependency>
@@ -117,7 +124,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.smartclass.smartclassbackendgateway.SmartclassBackendGatewayApplication</mainClass>
-                    <skip>true</skip>
+                    <skip>${spring-boot.repackage.skip}</skip>
                 </configuration>
                 <executions>
                     <execution>

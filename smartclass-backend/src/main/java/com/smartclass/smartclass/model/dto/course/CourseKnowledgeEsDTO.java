@@ -15,7 +15,7 @@ import java.io.Serializable;
  * 课程知识 ES 包装类
  * 用于 RAG 检索，聚合课程、章节、小节的内容
  */
-@Document(indexName = "course_knowledge")
+@Document(indexName = "course_knowledge", createIndex = false)
 @Data
 public class CourseKnowledgeEsDTO implements Serializable {
 

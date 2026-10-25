@@ -6,7 +6,7 @@ import { PlusOutlined, LoadingOutlined } from '@ant-design/icons';
 import React, { useRef, useState } from 'react';
 import styles from './modal.less';
 import regionData from '@/constants/regionData';
-import moment from 'moment';
+import dayjs, { type Dayjs } from 'dayjs';
 import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface';
 
 interface Props {
@@ -288,7 +288,7 @@ const CreateModal: React.FC<Props> = (props) => {
           placeholder="请选择生日"
           colProps={{ span: 12 }}
           fieldProps={{
-            disabledDate: (current: moment.Moment | null) => current && current > moment(),
+            disabledDate: (current: Dayjs | null) => current && current > dayjs(),
           }}
         />
         

@@ -14,7 +14,7 @@ async function loadRecommendCourses() {
   loading.value = true;
   try {
     const response = await courseApi.getRecommend(6);
-    recommendCourses.value = response.data ?? [];
+    recommendCourses.value = response ?? [];
   } catch (error) {
     console.error('加载推荐课程失败:', error);
   } finally {

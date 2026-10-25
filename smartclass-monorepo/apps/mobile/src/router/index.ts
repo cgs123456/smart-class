@@ -91,12 +91,12 @@ const router = createRouter({
 // 全局前置守卫
 router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore();
-  
-  // 初始化用户状态
-  if (!userStore.isLoggedIn && userStore.token) {
-    await userStore.refreshUserInfo();
+
+  // 首次导航时校验一次会话（后端为 Session Cookie，无本地 token）
+  if (!userStore.sessionChecked) {
+    await userStore.fetchSession();
   }
-  
+
   // 需要认证的页面
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next({ name: 'Login', query: { redirect: to.fullPath } });

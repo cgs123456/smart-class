@@ -14,6 +14,7 @@ import com.smartclass.smartclass.model.entity.PostFavour;
 import com.smartclass.smartclass.model.entity.User;
 import com.smartclass.smartclass.service.PostFavourService;
 import com.smartclass.smartclass.service.PostService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,11 +55,16 @@ public class PostFavourServiceImpl extends ServiceImpl<PostFavourMapper, PostFav
         if (hasFavour(postId, userId)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "已经收藏过该帖子");
         }
-        // 添加收藏
+        // 添加收藏（uk_post_user 唯一键兜底并发重复，冲突时按已收藏处理）
         PostFavour postFavour = new PostFavour();
         postFavour.setUserId(userId);
         postFavour.setPostId(postId);
-        boolean result = this.save(postFavour);
+        boolean result;
+        try {
+            result = this.save(postFavour);
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "已经收藏过该帖子");
+        }
         if (result) {
             // 收藏数 + 1
             postMapper.updateFavourNum(postId, 1);

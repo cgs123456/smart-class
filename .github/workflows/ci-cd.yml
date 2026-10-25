@@ -253,7 +253,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build all packages
-        run: pnpm -r run build
+        run: pnpm turbo:build
 
       - name: Upload UI dist
         uses: actions/upload-artifact@v4
@@ -318,7 +318,11 @@ jobs:
       - name: Build and push Gateway
         uses: docker/build-push-action@v5
         with:
-          context: ./smartclass-backend-microservice/smartclass-backend-gateway
+          context: ./smartclass-backend-microservice
+          file: ./smartclass-backend-microservice/Dockerfile
+          build-args: |
+            SERVICE_DIR=smartclass-backend-gateway
+            SERVICE_PORT=8101
           push: true
           tags: ${{ steps.meta-gateway.outputs.tags }}
           labels: ${{ steps.meta-gateway.outputs.labels }}
@@ -339,7 +343,11 @@ jobs:
       - name: Build and push Intelligence
         uses: docker/build-push-action@v5
         with:
-          context: ./smartclass-backend-microservice/smartclass-backend-intelligence
+          context: ./smartclass-backend-microservice
+          file: ./smartclass-backend-microservice/Dockerfile
+          build-args: |
+            SERVICE_DIR=smartclass-backend-intelligence
+            SERVICE_PORT=10008
           push: true
           tags: ${{ steps.meta-intelligence.outputs.tags }}
           labels: ${{ steps.meta-intelligence.outputs.labels }}

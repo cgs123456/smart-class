@@ -210,6 +210,22 @@ import { getTagStyle, convertDifficultyToText, getDifficultyClass } from '../../
   align-items: center;
 }
 
+.difficulty-easy {
+  color: #4caf50;
+}
+
+.difficulty-medium {
+  color: #ff9800;
+}
+
+.difficulty-hard {
+  color: #f44336;
+}
+
+.difficulty-unknown {
+  color: #969799;
+}
+
 .difficulty-tag {
   padding: 2px 6px;
   border-radius: 4px;

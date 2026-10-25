@@ -38,7 +38,20 @@ public final class UserSessionUtils {
      */
     public static User getLoginUserPermitNull(HttpServletRequest request) {
         Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        return userObj instanceof User ? (User) userObj : null;
+        if (userObj instanceof User) {
+            return (User) userObj;
+        }
+        // 网关 JWT 链路：session 为空时，仅在共享内部令牌匹配时采信网关注入的身份头，
+        // 返回仅含 id/role 的轻量 User（业务侧如需完整资料走 UserDubboService.getById）
+        Long gatewayUserId = com.smartclass.smartclassbackendcommon.config.InternalIdentityHolder
+                .resolveTrustedUserId(request);
+        if (gatewayUserId == null) {
+            return null;
+        }
+        User user = new User();
+        user.setId(gatewayUserId);
+        user.setUserRole(request.getHeader("X-User-Role"));
+        return user;
     }
 
     /**

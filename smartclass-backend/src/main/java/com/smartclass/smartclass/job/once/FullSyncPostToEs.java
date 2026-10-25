@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.collection.CollUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Component;
 */
 @Component
 @Slf4j
+// 全量重建为运维动作：默认不在启动时执行，需显式传 --rag.full-sync-on-startup=true。
+// 增量同步走业务写入路径，不受此开关影响。
 public class FullSyncPostToEs implements CommandLineRunner {
 
     @Resource

@@ -132,15 +132,21 @@ dubbo:
   application:
     name: smartclass-backend-user
     qos-port: 22222
+  scan:
+    base-packages: com.smartclass.smartclassbackenduserservice
   registry:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
-  protocol:
-    name: triple
-    port: 20001
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
+    # 接口级注册：避免 Dubbo 实例级注册把 Nacos 里 Spring Cloud 的 HTTP 端口(10001)覆盖成 Dubbo 端口(20001)
+    register-mode: interface
+  # 协议配置 ID 必须与 @DubboService(protocol="triple") 引用一致；SPI 名为 tri
+  protocols:
+    triple:
+      name: tri
+      port: 20001
   config-center:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   metadata-report:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   provider:
     retries: 3
     timeout: 3000

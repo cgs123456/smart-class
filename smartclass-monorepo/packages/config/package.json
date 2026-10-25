@@ -19,9 +19,5 @@
     "prettier": "^3.3.3",
     "typescript": "^5.5.4",
     "vite": "^5.4.0"
-  },
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.smartclass.cn/"
   }
 }

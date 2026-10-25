@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 /**
  * JWT 工具类（user 服务专用，负责签发 token）
@@ -45,11 +46,20 @@ public class JwtUtil {
      * @param userRole 用户角色
      * @return 签名后的 JWT 字符串
      */
+    /**
+     * Token 有效期：7 天。无过期时间的 token 一旦泄漏将永久有效，
+     * 网关 parseAndValidate 也会拒绝无 exp 的 token。
+     */
+    private static final long TOKEN_EXPIRE_MILLIS = 7 * 24 * 60 * 60 * 1000L;
+
     public String generateToken(Long userId, String userRole) {
+        long now = System.currentTimeMillis();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("userId", userId)
                 .claim("userRole", userRole)
+                .issuedAt(new Date(now))
+                .expiration(new Date(now + TOKEN_EXPIRE_MILLIS))
                 .signWith(signingKey)
                 .compact();
     }

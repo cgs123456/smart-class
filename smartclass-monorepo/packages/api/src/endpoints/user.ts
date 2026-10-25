@@ -1,172 +1,135 @@
 import { request } from '../client';
-import type { User, UserVO, PageResult, PageRequest } from '@smartclass/shared';
+import { CACHED_USER_KEY } from '../client';
+import type { User, UserVO, LoginUserVO, PageResult } from '@smartclass/shared';
 
 /**
- * 用户相关 API
+ * 用户相关 API —— 与单体后端 UserController/CaptchaController 实际契约对齐：
+ * 认证为 Session Cookie（无 token/refreshToken），登录/注册在验证码开关开启时
+ * 需先调 getCaptcha 并提交 captchaUuid + captchaCode。
  */
 export const userApi = {
   /**
-   * 用户登录
+   * 获取图形验证码（后端 captcha.enable=true 时登录/注册必填）
+   * 返回 { uuid, captchaImage(base64) }；开关关闭时返回 { captchaEnable: "false" }
    */
-  login: (data: { userAccount: string; userPassword: string }) =>
-    request.post<{ token: string; refreshToken: string; user: User }>('/user/login', data),
-  
+  getCaptcha: () =>
+    request.get<Record<string, string>>('/captcha'),
+
   /**
-   * 用户注册
+   * 用户登录（返回 LoginUserVO，会话 Cookie 由后端 Set-Cookie 下发）
    */
-  register: (data: { userAccount: string; userPassword: string; checkPassword: string }) =>
-    request.post<{ token: string; refreshToken: string; user: User }>('/user/register', data),
-  
+  login: (data: { userAccount: string; userPassword: string; captchaUuid?: string; captchaCode?: string }) =>
+    request.post<LoginUserVO>('/user/login', data),
+
+  /**
+   * 用户注册（返回新用户 id）
+   */
+  register: (data: { userAccount: string; userPassword: string; checkPassword: string; captchaUuid?: string; captchaCode?: string }) =>
+    request.post<number>('/user/register', data),
+
   /**
    * 手机号登录
    */
-  phoneLogin: (data: { phone: string; code: string }) =>
-    request.post<{ token: string; refreshToken: string; user: User }>('/user/login/phone', data),
-  
+  phoneLogin: (data: { userPhone: string; userPassword: string; captchaUuid?: string; captchaCode?: string }) =>
+    request.post<LoginUserVO>('/user/login/phone', data),
+
   /**
-   * 手机号注册
+   * 手机号注册（返回新用户 id）
    */
-  phoneRegister: (data: { phone: string; code: string; password: string; checkPassword: string }) =>
-    request.post<{ token: string; refreshToken: string; user: User }>('/user/register/phone', data),
-  
+  phoneRegister: (data: { userPhone: string; userPassword: string; checkPassword: string; captchaUuid?: string; captchaCode?: string }) =>
+    request.post<number>('/user/register/phone', data),
+
   /**
-   * 刷新 Token
-   */
-  refreshToken: (refreshToken: string) =>
-    request.post<{ token: string; refreshToken: string }>('/auth/refresh', { refreshToken }),
-  
-  /**
-   * 登出
+   * 登出（后端销毁会话）
    */
   logout: () =>
-    request.post('/user/logout'),
-  
+    request.post<boolean>('/user/logout'),
+
   /**
-   * 获取当前登录用户
+   * 获取当前登录用户（会话失效时后端返回 40100）
    */
   getLoginUser: () =>
-    request.get<User>('/user/get/login'),
-  
+    request.get<LoginUserVO>('/user/get/login'),
+
   /**
-   * 获取当前登录用户 (允许未登录)
-   */
-  getLoginUserPermitNull: () =>
-    request.get<User | null>('/user/get/login/permitNull'),
-  
-  /**
-   * 根据 ID 获取用户
+   * 根据 ID 获取用户（管理端）
    */
   getById: (id: number) =>
-    request.get<User>(`/user/get/${id}`),
-  
+    request.get<User>('/user/get', { params: { id } }),
+
   /**
    * 获取用户 VO
    */
   getUserVOById: (userId: number) =>
-    request.get<UserVO>(`/user/getUserVO/${userId}`),
-  
+    request.get<UserVO>('/user/get/vo', { params: { userId } }),
+
   /**
    * 批量获取用户 VO
    */
   getUserVOList: (userList: User[]) =>
     request.post<UserVO[]>('/user/getUserVOList', userList),
-  
+
   /**
    * 批量获取用户信息
    */
   listByIds: (userIds: number[]) =>
     request.post<User[]>('/user/listByIds', userIds),
-  
+
   /**
-   * 更新用户信息
+   * 分页查询用户（VO）
    */
-  updateById: (user: Partial<User> & { id: number }) =>
-    request.put<boolean>('/user/updateById', user),
-  
-  /**
-   * 分页查询用户
-   */
-  pageQuery: (params: PageRequest & {
+  pageQuery: (params: {
+    current?: number;
+    pageSize?: number;
     userAccount?: string;
     userName?: string;
     userRole?: string;
     province?: string;
     city?: string;
   }) =>
-    request.get<PageResult<UserVO>>('/user/page', { params }),
-  
+    request.post<PageResult<UserVO>>('/user/list/page/vo', params),
+
   /**
-   * 上传头像
+   * 更新当前用户资料
+   */
+  updateMy: (user: Partial<Pick<User, 'userName' | 'userAvatar' | 'userProfile'>>) =>
+    request.post<boolean>('/user/update/my', user),
+
+  /**
+   * 上传头像（FileController /file/upload/avatar）
    */
   uploadAvatar: (file: File, onProgress?: (progress: number) => void) =>
-    request.upload<string>('/user/upload/avatar', file, onProgress),
-  
-  /**
-   * 发送验证码
-   */
-  sendCaptcha: (email: string) =>
-    request.post('/captcha/send', { email }),
-  
-  /**
-   * 校验验证码
-   */
-  verifyCaptcha: (email: string, code: string) =>
-    request.post('/captcha/verify', { email, code })
+    request.upload<string>('/file/upload/avatar', file, onProgress)
 };
 
 /**
- * 用户状态管理相关
+ * 登录态辅助：凭证在后端 Session（Cookie），本地仅缓存展示用用户信息。
+ * 真实登录态判断请以 userApi.getLoginUser() / 401 事件为准。
  */
 export const userState = {
-  /**
-   * 设置登录态
-   */
-  setAuth: (token: string, refreshToken: string, user: User) => {
-    localStorage.setItem('smartclass_token', token);
-    localStorage.setItem('smartclass_refresh_token', refreshToken);
-    localStorage.setItem('smartclass_user_info', JSON.stringify(user));
+  /** 登录成功后缓存用户展示信息 */
+  cacheUser: (user: LoginUserVO) => {
+    localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user));
   },
-  
-  /**
-   * 清除登录态
-   */
-  clearAuth: () => {
-    localStorage.removeItem('smartclass_token');
-    localStorage.removeItem('smartclass_refresh_token');
-    localStorage.removeItem('smartclass_user_info');
+
+  /** 登出/会话失效时清除缓存 */
+  clearCache: () => {
+    localStorage.removeItem(CACHED_USER_KEY);
   },
-  
-  /**
-   * 获取当前用户
-   */
-  getCurrentUser: (): User | null => {
+
+  /** 读取缓存的用户信息（可能过期，仅供首屏占位） */
+  getCachedUser: (): LoginUserVO | null => {
     try {
-      const userStr = localStorage.getItem('smartclass_user_info');
+      const userStr = localStorage.getItem(CACHED_USER_KEY);
       return userStr ? JSON.parse(userStr) : null;
     } catch {
       return null;
     }
   },
-  
-  /**
-   * 获取 Token
-   */
-  getToken: (): string | null => {
-    return localStorage.getItem('smartclass_token');
-  },
-  
-  /**
-   * 判断是否登录
-   */
-  isLoggedIn: (): boolean => {
-    return !!localStorage.getItem('smartclass_token');
-  },
-  
-  /**
-   * 判断是否为管理员
-   */
-  isAdmin: (user?: User | null): boolean => {
-    const currentUser = user || userState.getCurrentUser();
+
+  /** 判断是否为管理员（基于缓存，权威判断走接口） */
+  isAdmin: (user?: LoginUserVO | null): boolean => {
+    const currentUser = user || userState.getCachedUser();
     return currentUser?.userRole === 'admin';
   }
 };

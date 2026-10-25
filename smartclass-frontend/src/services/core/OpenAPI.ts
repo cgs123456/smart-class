@@ -19,8 +19,9 @@ export type OpenAPIConfig = {
     ENCODE_PATH?: ((path: string) => string) | undefined;
 };
 
-// 严格读取环境变量
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+// 严格读取环境变量；未配置时回退同源（反向代理同域部署场景），避免空 BASE 打到相对页面路径
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+    || (typeof window !== 'undefined' ? window.location.origin : '');
 
 export const OpenAPI: OpenAPIConfig = {
     BASE: API_BASE,

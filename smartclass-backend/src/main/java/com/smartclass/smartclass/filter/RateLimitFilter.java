@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
@@ -46,6 +47,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // 滑动窗口：1分钟
     private static final long WINDOW_MS = 60 * 1000L;
 
+    /**
+     * 受信代理地址/网段（逗号分隔，支持 10.0.0.* 形式）。
+     * 默认为空：完全不信任 X-Forwarded-For / X-Real-IP，直连时伪造转发头无法绕过限流。
+     * 部署在 nginx 等反代之后时配置为反代地址，如 127.0.0.1,10.0.0.*
+     */
+    @Value("${ratelimit.trusted-proxies:}")
+    private String trustedProxies;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -81,9 +90,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
+        // 只信任来自受信代理的转发头，否则客户端可自带 XFF 绕过限流
+        String ip = null;
+        if (isFromTrustedProxy(request)) {
+            ip = request.getHeader("X-Forwarded-For");
+            if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getHeader("X-Real-IP");
+            }
         }
         if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
@@ -93,5 +106,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    private boolean isFromTrustedProxy(HttpServletRequest request) {
+        if (StringUtils.isBlank(trustedProxies)) {
+            return false;
+        }
+        String remote = request.getRemoteAddr();
+        for (String p : trustedProxies.split(",")) {
+            String t = p.trim();
+            if (t.isEmpty()) {
+                continue;
+            }
+            if (t.endsWith("*") ? remote.startsWith(t.substring(0, t.length() - 1)) : t.equals(remote)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

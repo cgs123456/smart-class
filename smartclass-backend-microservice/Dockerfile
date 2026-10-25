@@ -32,6 +32,7 @@ RUN mvn -B clean package -pl ${SERVICE_DIR} -am -DskipTests
 FROM eclipse-temurin:17-jre
 
 ARG SERVICE_DIR
+ARG SERVICE_PORT=8080
 
 # 服务名（用于 JVM 启动参数与日志标识）
 ENV SERVICE_NAME=${SERVICE_DIR}
@@ -43,11 +44,10 @@ WORKDIR /app
 # 拷贝构建产物
 COPY --from=builder /workspace/${SERVICE_DIR}/target/*.jar /app/app.jar
 
-# 暴露 Actuator 健康检查端口（默认 8080，由 application.yml 中的 server.port 覆盖）
-EXPOSE 8080
+# 服务 HTTP 端口（构建时按服务传入，如 10001-10014）
+EXPOSE ${SERVICE_PORT}
 
-# 健康检查（依赖 spring-boot-starter-actuator）
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
-
+# 健康检查由 compose/k8s 探针定义（基础镜像无 curl/wget）：
+#   compose: healthcheck.test: ["CMD-SHELL", "exit 0"] 或由编排层实现
+#   k8s:    livenessProbe/readinessProbe 指向 /actuator/health
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

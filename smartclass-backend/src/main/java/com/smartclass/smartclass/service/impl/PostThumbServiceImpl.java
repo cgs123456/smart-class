@@ -10,6 +10,7 @@ import com.smartclass.smartclass.model.entity.Post;
 import com.smartclass.smartclass.model.entity.PostThumb;
 import com.smartclass.smartclass.service.PostService;
 import com.smartclass.smartclass.service.PostThumbService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,11 +48,16 @@ public class PostThumbServiceImpl extends ServiceImpl<PostThumbMapper, PostThumb
         if (hasThumb(postId, userId)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "已经点赞过该帖子");
         }
-        // 添加点赞
+        // 添加点赞（uk_post_user 唯一键兜底并发重复，冲突时按已点赞处理）
         PostThumb postThumb = new PostThumb();
         postThumb.setUserId(userId);
         postThumb.setPostId(postId);
-        boolean result = this.save(postThumb);
+        boolean result;
+        try {
+            result = this.save(postThumb);
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "已经点赞过该帖子");
+        }
         if (result) {
             // 点赞数 + 1
             postMapper.updateThumbNum(postId, 1);

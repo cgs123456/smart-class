@@ -1,1 +1,2 @@
 com.smartclass.smartclassbackendcommon.config.SmartclassCommonAutoConfiguration
+com.smartclass.smartclassbackendcommon.config.MybatisPlusConfig

@@ -16,8 +16,7 @@ import './index.less';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+import { safeRehypePlugins } from '@/utils/safeMarkdown';
 import 'katex/dist/katex.min.css';
 import { history } from '@umijs/max';
 
@@ -119,7 +118,7 @@ const PostManagement: React.FC = () => {
           {record.content ? (
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex, rehypeRaw]}
+              rehypePlugins={[...safeRehypePlugins]}
               components={{
                 code: CodeBlock
               }}

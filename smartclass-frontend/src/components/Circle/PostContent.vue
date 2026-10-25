@@ -23,9 +23,7 @@
 <script setup lang="ts">
 import { computed, defineEmits, defineProps } from 'vue';
 import { showImagePreview } from 'vant';
-import MarkdownIt from 'markdown-it';
-import markdownItKatex from 'markdown-it-katex';
-import DOMPurify from 'dompurify';
+import { renderMarkdown } from '../../utils/markdown';
 import 'katex/dist/katex.min.css';
 
 interface PostContentProps {
@@ -44,50 +42,9 @@ const emit = defineEmits<{
   (e: 'image-preview', index: number): void;
 }>();
 
-// 初始化 markdown-it 实例
-const md = new MarkdownIt({
-  html: true, // 允许HTML标签
-  breaks: true, // 转换段落里的 '\n' 到 <br>
-  linkify: true, // 自动将URL文本转换为链接
-  typographer: true, // 启用一些语言中立的替换 + 引号美化
-});
-
-// 使用markdown-it-katex插件渲染LaTeX公式
-md.use(markdownItKatex);
-
-// 自定义代码块渲染规则
-md.renderer.rules.code_block = function (tokens, idx) {
-  const code = tokens[idx]?.content || '';
-  return `<pre class="simple-code-block"><code>${code}</code></pre>`;
-};
-
-md.renderer.rules.fence = function (tokens, idx) {
-  const token = tokens[idx];
-  const code = token?.content || '';
-
-  return `<pre class="simple-code-block"><code>${code}</code></pre>`;
-};
-
-// 安全地渲染Markdown内容
+// 安全地渲染Markdown内容（marked+KaTeX 统一管线，含 DOMPurify 清理）
 const renderedContent = computed(() => {
-  try {
-    // 确保content存在且是字符串
-    const content = props.content || '';
-
-    // 使用markdown-it和markdown-it-katex解析Markdown和LaTeX公式
-    // 确保rawHtml是字符串
-    const htmlContent = md.render(content);
-
-    // 使用DOMPurify清理HTML，但允许数学公式需要的标签通过
-    return DOMPurify.sanitize(htmlContent, {
-      ADD_ATTR: ['target', 'class', 'style'],
-      ADD_TAGS: ['svg', 'path', 'use'],
-      USE_PROFILES: { html: true, svg: true, mathMl: true },
-    });
-  } catch (error) {
-    console.error('Markdown渲染错误:', error);
-    return props.content || '';
-  }
+  return renderMarkdown(props.content || '');
 });
 
 // 处理图片点击预览

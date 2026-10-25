@@ -13,6 +13,7 @@
     <name>smartclass-backend-pay</name>
     <description>smartclass-backend-pay</description>
     <properties>
+        <spring-boot.repackage.skip>false</spring-boot.repackage.skip>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -89,7 +90,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.smartclass.smartclassbackendpay.SmartclassBackendPayApplication</mainClass>
-                    <skip>true</skip>
+                    <skip>${spring-boot.repackage.skip}</skip>
                 </configuration>
                 <executions>
                     <execution>

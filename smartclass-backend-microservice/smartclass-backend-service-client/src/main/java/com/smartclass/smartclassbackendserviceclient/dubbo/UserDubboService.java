@@ -73,4 +73,15 @@ public interface UserDubboService {
      * @return 是否成功
      */
     boolean updateById(User user);
+
+    /**
+     * 激活/续期会员（幂等：同一 paymentOrderId 重复调用不会叠加时长）
+     *
+     * @param userId          用户ID
+     * @param level           会员等级
+     * @param durationDays    时长（天）
+     * @param paymentOrderId  关联支付订单ID，作为激活幂等键
+     * @return 是否成功
+     */
+    boolean activateVip(Long userId, String level, int durationDays, Long paymentOrderId);
 }

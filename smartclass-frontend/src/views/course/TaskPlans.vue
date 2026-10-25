@@ -289,7 +289,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast } from 'vant';
 import { BackButton } from '../../components/Common';
-import { TaskPlan, getAllTaskPlans, mockPopularCourses } from '../../api/mock.ts';
+import { TaskPlan, getAllTaskPlans, type Course } from '../../api/mock.ts';
+import { fetchRecommendCourses } from '../../api/courses.ts';
 import dayjs from 'dayjs';
 
 const router = useRouter();
@@ -321,9 +322,10 @@ const newTask = ref({
   color: '',
 });
 
-// 课程选项
+// 课程选项（真实推荐课程，挂载后异步加载）
+const courseList = ref<Course[]>([]);
 const courseOptions = computed(() => {
-  return mockPopularCourses.map((course) => ({
+  return courseList.value.map((course) => ({
     text: course.title,
     value: course.id,
     color: course.tagColor,
@@ -341,6 +343,14 @@ const dateRangeDisplay = computed(() => {
 // 获取任务列表
 onMounted(() => {
   tasks.value = getAllTaskPlans();
+  // 课程选项来自真实推荐接口，失败时选项为空不阻塞任务功能
+  fetchRecommendCourses(20)
+    .then((list) => {
+      courseList.value = list;
+    })
+    .catch((error) => {
+      console.error('加载课程选项失败:', error);
+    });
 });
 
 // 筛选任务

@@ -87,14 +87,16 @@ dubbo:
     name: smartclass-backend-pay
     qos-port: 22232
   registry:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
+    # 接口级注册：避免 Dubbo 实例级注册把 Nacos 里 Spring Cloud 的 HTTP 端口(10001)覆盖成 Dubbo 端口(20001)
+    register-mode: interface
   protocol:
-    name: triple
+    name: tri
     port: 20011
   config-center:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   metadata-report:
-    address: nacos://$ {NACOS_ADDR:127.0.0.1:8848}
+    address: nacos://${NACOS_ADDR:127.0.0.1:8848}
   provider:
     retries: 3
     timeout: 3000
@@ -102,3 +104,7 @@ dubbo:
     check: false
     retries: 2
     timeout: 5000
+
+# 模拟支付开关（默认关闭；仅 dev/test 开启，生产必须走渠道回调验签）
+pay:
+  mock-enabled: ${PAY_MOCK_ENABLED:false}

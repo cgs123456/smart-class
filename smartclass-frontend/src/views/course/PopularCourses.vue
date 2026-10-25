@@ -47,12 +47,9 @@ import { showToast } from 'vant';
 import { CourseList, CourseDetail } from '../../components/Course';
 import { BackButton } from '../../components/Common';
 import {
-  mockPopularCourses,
-  courseCategories,
-  getCoursesByCategory,
-  fetchMockPopularCourses,
-  fetchCourseCategories,
-} from '../../api/mock.ts';
+  fetchRecommendCourses,
+  fetchTopCategories,
+} from '../../api/courses.ts';
 
 // 定义类型
 interface CourseHighlight {
@@ -104,8 +101,9 @@ const displayedCourses = computed(() => {
   } else {
     const category = categories.value[activeCategory.value - 1];
     if (category) {
+      // 分类名匹配学科或标签（真实数据的 subject 取自课程首个 tag）
       return allCourses.value.filter(
-        (course) => course.subject === category.name,
+        (course) => course.subject === category.name || course.tag === category.name,
       );
     }
     return allCourses.value;
@@ -161,10 +159,10 @@ const loadCourses = async () => {
   loading.value = true;
 
   try {
-    // 获取课程数据和分类数据
+    // 获取课程数据和分类数据（真实接口）
     const [coursesData, categoriesData] = await Promise.all([
-      fetchMockPopularCourses(),
-      fetchCourseCategories(),
+      fetchRecommendCourses(20),
+      fetchTopCategories(),
     ]);
 
     // 增强课程数据

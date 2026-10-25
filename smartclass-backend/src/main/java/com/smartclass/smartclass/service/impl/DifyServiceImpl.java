@@ -28,6 +28,10 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class DifyServiceImpl implements DifyService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("aiStreamExecutor")
+    private java.util.concurrent.Executor aiStreamExecutor;
+
     @Resource
     private DifyChatService difyChatService;
 
@@ -174,7 +178,7 @@ public class DifyServiceImpl implements DifyService {
             } catch (Exception e) {
                 log.error("获取会话总结失败", e);
             }
-        });
+        }, aiStreamExecutor);
     }
 
     /**
@@ -257,7 +261,7 @@ public class DifyServiceImpl implements DifyService {
                 } catch (Exception ignored) { }
                 safeCompleteEmitter(emitter, e);
             }
-        });
+        }, aiStreamExecutor);
     }
 
     /**

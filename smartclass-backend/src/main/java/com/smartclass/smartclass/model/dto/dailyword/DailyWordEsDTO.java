@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * 每日单词 ES 包装类
  */
-@Document(indexName = "daily_word")
+@Document(indexName = "daily_word", createIndex = false)
 @Data
 public class DailyWordEsDTO implements Serializable {
 

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,7 +26,7 @@ public class GatewayFallbackController {
     /**
      * 用户服务降级
      */
-    @GetMapping("/user")
+    @RequestMapping(value = "/user", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
     public ResponseEntity<Map<String, Object>> userFallback() {
         log.warn("用户服务熔断降级触发");
         Map<String, Object> response = new HashMap<>();
@@ -39,7 +40,7 @@ public class GatewayFallbackController {
     /**
      * 智能服务降级
      */
-    @GetMapping("/intelligence")
+    @RequestMapping(value = "/intelligence", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
     public ResponseEntity<Map<String, Object>> intelligenceFallback() {
         log.warn("智能服务熔断降级触发");
         Map<String, Object> response = new HashMap<>();
@@ -53,7 +54,7 @@ public class GatewayFallbackController {
     /**
      * 文件服务降级
      */
-    @GetMapping("/file")
+    @RequestMapping(value = "/file", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
     public ResponseEntity<Map<String, Object>> fileFallback() {
         log.warn("文件服务熔断降级触发");
         Map<String, Object> response = new HashMap<>();
@@ -67,7 +68,7 @@ public class GatewayFallbackController {
     /**
      * 通用降级
      */
-    @GetMapping("/default")
+    @RequestMapping(value = "/default", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
     public ResponseEntity<Map<String, Object>> defaultFallback() {
         log.warn("通用熔断降级触发");
         Map<String, Object> response = new HashMap<>();

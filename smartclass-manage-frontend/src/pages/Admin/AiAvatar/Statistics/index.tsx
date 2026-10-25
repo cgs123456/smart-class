@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, DatePicker, Radio, Typography, Statistic, Divider, Alert } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import ReactECharts from 'echarts-for-react';
+import { EChartsReact } from '@/utils/echarts';
 import { RobotOutlined, LineChartOutlined, BarChartOutlined, PieChartOutlined, UserOutlined, MessageOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import './index.less';
 
 const { RangePicker } = DatePicker;
@@ -29,7 +29,7 @@ const AiAvatarStatistics: React.FC = () => {
     // 生成日期标签
     const dateLabels = [];
     for (let i = 0; i < days; i++) {
-      dateLabels.push(moment().subtract(i, 'days').format('MM-DD'));
+      dateLabels.push(dayjs().subtract(i, 'days').format('MM-DD'));
     }
     dateLabels.reverse();
 
@@ -197,7 +197,7 @@ const AiAvatarStatistics: React.FC = () => {
 
   const renderChart = () => {
     const option = generateMockData(chartType, timeRange);
-    return <ReactECharts 
+    return <EChartsReact 
       option={option} 
       style={{ height: 400 }} 
       key={`${chartType}-${timeRange}`}

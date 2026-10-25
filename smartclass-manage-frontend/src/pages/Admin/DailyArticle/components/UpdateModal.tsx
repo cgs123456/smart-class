@@ -4,7 +4,7 @@ import '@umijs/max';
 import { message, Modal, Form, Input, Button, DatePicker, InputNumber, Select, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface';
 
 interface Props {
@@ -47,10 +47,10 @@ const UpdateModal: React.FC<Props> = (props) => {
 
   useEffect(() => {
     if (oldData && visible) {
-      // 处理日期格式，将字符串转为moment对象
+      // 处理日期格式，将字符串转为 dayjs 对象
       const initialValues = {
         ...oldData,
-        publishDate: oldData.publishDate ? moment(oldData.publishDate) : undefined,
+        publishDate: oldData.publishDate ? dayjs(oldData.publishDate) : undefined,
       };
       form.setFieldsValue(initialValues);
       
@@ -79,7 +79,7 @@ const UpdateModal: React.FC<Props> = (props) => {
       // 处理日期格式
       let publishDate = values.publishDate;
       if (publishDate) {
-        publishDate = moment(publishDate).format('YYYY-MM-DD');
+        publishDate = dayjs(publishDate).format('YYYY-MM-DD');
       }
       
       // 处理表单数据

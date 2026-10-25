@@ -1,6 +1,7 @@
 package com.smartclass.smartclassbackendpay.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -14,6 +15,8 @@ import com.smartclass.smartclassbackendmodel.model.vo.PaymentOrderVO;
 import com.smartclass.smartclassbackendpay.mapper.PaymentOrderMapper;
 import com.smartclass.smartclassbackendpay.service.PaymentOrderService;
 import com.smartclass.smartclassbackendpay.service.ProductService;
+import com.smartclass.smartclassbackendserviceclient.dubbo.UserDubboService;
+import org.apache.dubbo.config.annotation.DubboReference;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -58,6 +61,16 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
      */
     @Value("${wx.pay.sign-key:}")
     private String wxPaySignKey;
+
+    /**
+     * 模拟支付开关：默认关闭。开启后 payOrder 才允许本地直接置为已支付（仅限 dev/test），
+     * 生产环境必须走渠道回调 handleCallbackWithVerify 验签后激活。
+     */
+    @Value("${pay.mock-enabled:false}")
+    private boolean mockPayEnabled;
+
+    @DubboReference(version = "1.0.0", check = false)
+    private UserDubboService userDubboService;
 
     /**
      * 支付宝公钥（Base64 编码的 X.509 SubjectPublicKeyInfo），用于 RSA-SHA256 验签。
@@ -129,26 +142,36 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
         if (order.getExpireTime() != null && order.getExpireTime().before(new Date())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "订单已过期");
         }
-        // 模拟支付
-        // P2-8: 此处为模拟支付实现，仅适用于 dev/test 环境。
-        // 生产环境必须对接真实支付渠道（微信支付/支付宝），通过 handleCallbackWithVerify
-        // 在回调验签通过后再更新订单状态，禁止在生产环境直接调用本方法置为已支付。
-        order.setStatus(1);
-        order.setPaymentTime(new Date());
-        order.setTradeNo("SIM_" + System.currentTimeMillis());
-        boolean result = this.updateById(order);
-        if (!result) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付失败");
+        // 模拟支付仅限开发/测试环境，生产环境由真实回调激活
+        if (!mockPayEnabled) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付渠道未开放，请通过正式支付渠道完成付款");
         }
-        // 如果是VIP商品，通过微服务调用激活会员
+        // 模拟支付；CAS 抢占 status 0→1，防并发重复支付/重复激活
+        boolean result = this.update(new LambdaUpdateWrapper<PaymentOrder>()
+                .eq(PaymentOrder::getId, order.getId())
+                .eq(PaymentOrder::getStatus, 0)
+                .set(PaymentOrder::getStatus, 1)
+                .set(PaymentOrder::getPaymentTime, new Date())
+                .set(PaymentOrder::getTradeNo, "SIM_" + System.currentTimeMillis()));
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "订单状态已变更，请刷新后重试");
+        }
+        // 如果是VIP商品，激活会员
         Product product = productService.getById(order.getProductId());
         if (product != null && "vip".equals(product.getType())) {
-            log.info("VIP商品支付成功，需要激活会员，userId: {}, level: {}", userId, product.getLevel());
-            // 实际项目中通过Feign调用user服务激活VIP
-            // P1-13: 跨服务写（订单状态更新 + VIP 激活）缺乏分布式事务保障，
-            // 后续应接入 Seata AT/TCC 或基于 MQ 的最终一致性方案（本地消息表/事务消息），
-            // 避免出现订单已支付但 VIP 未激活（或反之）的不一致状态。
+            String level = StringUtils.isNotBlank(product.getLevel()) ? product.getLevel() : "vip";
+            int durationDays = product.getDurationDays() != null ? product.getDurationDays() : 30;
+            try {
+                userDubboService.activateVip(userId, level, durationDays, order.getId());
+            } catch (Exception e) {
+                // 订单已支付但跨服务激活失败；activateVip 以 paymentOrderId 幂等，
+                // 人工/重试补偿可安全重放。彻底方案见评审报告 P1-13（MQ 最终一致性）。
+                log.error("VIP 激活失败（订单已支付），userId: {}, orderNo: {}", userId, orderNo, e);
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付成功但会员激活失败，请联系客服处理");
+            }
         }
+        // CAS 只更新 DB，内存实体仍是旧值；回填后再转 VO，避免响应 status=0 与库不一致
+        order.setStatus(1);
         return convertToVO(order);
     }
 
@@ -349,31 +372,55 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
             log.warn("回调对应订单不存在，orderNo: {}", orderNo);
             return false;
         }
-        // 幂等：订单已支付直接返回成功
+        // 幂等：订单已支付——仍尝试补偿激活（activateVip 以 paymentOrderId 幂等，
+        // 首次回调激活失败后渠道重试时由此路径补齐），成功即返回
         if (order.getStatus() != null && order.getStatus() == 1) {
-            log.info("订单已支付，跳过重复处理，orderNo: {}", orderNo);
-            return true;
+            log.info("订单已支付，尝试补偿激活，orderNo: {}", orderNo);
+            return activateVipIfProduct(order);
         }
-        order.setStatus(1);
-        order.setPaymentTime(new Date());
-        if (StringUtils.isNotBlank(tradeNo)) {
-            order.setTradeNo(tradeNo);
-        }
-        boolean updated = this.updateById(order);
+        // CAS 抢占 status 0→1，防并发重复回调重复激活
+        boolean updated = this.update(new LambdaUpdateWrapper<PaymentOrder>()
+                .eq(PaymentOrder::getId, order.getId())
+                .eq(PaymentOrder::getStatus, 0)
+                .set(PaymentOrder::getStatus, 1)
+                .set(PaymentOrder::getPaymentTime, new Date())
+                .set(StringUtils.isNotBlank(tradeNo), PaymentOrder::getTradeNo, tradeNo));
         if (!updated) {
-            log.error("订单状态更新失败，orderNo: {}", orderNo);
+            log.error("订单状态更新失败（可能并发已处理），orderNo: {}", orderNo);
             return false;
         }
-        // 如果是 VIP 商品，激活会员
-        Product product = productService.getById(order.getProductId());
-        if (product != null && "vip".equals(product.getType())) {
-            log.info("VIP 商品支付成功，激活会员，userId: {}, level: {}",
-                    order.getUserId(), product.getLevel());
-            // 实际项目中通过 Feign 调用 user 服务激活 VIP
-            // P1-13: 跨服务写（订单状态更新 + VIP 激活）缺乏分布式事务保障，
-            // 后续应接入 Seata 或基于 MQ 的最终一致性方案，避免数据不一致。
+        // 如果是 VIP 商品，激活会员；失败返回 false 让渠道重试回调
+        if (!activateVipIfProduct(order)) {
+            return false;
         }
         return true;
+    }
+
+    /**
+     * 若订单商品为 VIP 类型则调用 user 服务激活会员（幂等）。
+     *
+     * @return true=非 VIP 商品或激活成功；false=激活失败（调用方应让渠道重试）
+     */
+    private boolean activateVipIfProduct(PaymentOrder order) {
+        Product product = productService.getById(order.getProductId());
+        if (product == null || !"vip".equals(product.getType())) {
+            return true;
+        }
+        String level = StringUtils.isNotBlank(product.getLevel()) ? product.getLevel() : "vip";
+        int durationDays = product.getDurationDays() != null ? product.getDurationDays() : 30;
+        try {
+            boolean activated = userDubboService.activateVip(order.getUserId(), level, durationDays, order.getId());
+            if (!activated) {
+                log.error("VIP 激活返回失败，userId: {}, orderNo: {}", order.getUserId(), order.getOrderNo());
+                return false;
+            }
+            log.info("VIP 商品支付成功，已激活会员，userId: {}, level: {}", order.getUserId(), level);
+            return true;
+        } catch (Exception e) {
+            // 跨服务写无分布式事务；activateVip 幂等，渠道重试回调可安全补齐（见 P1-13）
+            log.error("VIP 激活异常，userId: {}, orderNo: {}", order.getUserId(), order.getOrderNo(), e);
+            return false;
+        }
     }
 
     /**

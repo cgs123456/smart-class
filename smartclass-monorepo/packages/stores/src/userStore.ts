@@ -1,73 +1,62 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { User } from '@smartclass/shared';
+import type { LoginUserVO } from '@smartclass/shared';
 import { userApi } from '@smartclass/api';
 
-function getInitialUser(): User | null {
+const CACHED_USER_KEY = 'smartclass_user_info';
+
+function getInitialUser(): LoginUserVO | null {
   try {
-    const stored = localStorage.getItem('smartclass_user_info');
+    const stored = localStorage.getItem(CACHED_USER_KEY);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
   }
 }
 
+/**
+ * 用户状态 store —— 与后端 Session Cookie 认证对齐：
+ * 凭证只存在于服务端会话（Cookie 由 axios withCredentials 自动携带），
+ * 本地仅缓存展示信息；真实登录态以 fetchSession() / 401 事件为准。
+ */
 export const useUserStore = defineStore('user', () => {
   // 状态
-  const token = ref<string | null>(localStorage.getItem('smartclass_token'));
-  const refreshToken = ref<string | null>(localStorage.getItem('smartclass_refresh_token'));
-  const userInfo = ref<User | null>(getInitialUser());
-  const tenantId = ref<string>(localStorage.getItem('smartclass_tenant_id') || 'default');
+  const userInfo = ref<LoginUserVO | null>(getInitialUser());
+  const sessionChecked = ref(false);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  // 计算属性
-  const isLoggedIn = computed(() => !!token.value && !!userInfo.value);
+  // 计算属性（基于缓存，仅供 UI 占位；权威判断走后端接口）
+  const isLoggedIn = computed(() => !!userInfo.value);
   const isAdmin = computed(() => userInfo.value?.userRole === 'admin');
   const userRole = computed(() => userInfo.value?.userRole || 'student');
   const userName = computed(() => userInfo.value?.userName || userInfo.value?.userAccount || '未登录');
   const userAvatar = computed(() => userInfo.value?.userAvatar || '');
 
-  // Actions
-  /**
-   * 设置认证信息
-   */
-  function setAuth(newToken: string, newRefreshToken: string, user: User) {
-    token.value = newToken;
-    refreshToken.value = newRefreshToken;
+  function cacheUser(user: LoginUserVO | null) {
     userInfo.value = user;
-    localStorage.setItem('smartclass_token', newToken);
-    localStorage.setItem('smartclass_refresh_token', newRefreshToken);
-    localStorage.setItem('smartclass_user_info', JSON.stringify(user));
-    error.value = null;
+    if (user) {
+      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(CACHED_USER_KEY);
+    }
   }
 
   /**
-   * 清除认证信息
+   * 账号密码登录（验证码开关开启时需先 userApi.getCaptcha() 并携带 captchaUuid/captchaCode）
    */
-  function clearAuth() {
-    token.value = null;
-    refreshToken.value = null;
-    userInfo.value = null;
-    localStorage.removeItem('smartclass_token');
-    localStorage.removeItem('smartclass_refresh_token');
-    localStorage.removeItem('smartclass_user_info');
-  }
-
-  /**
-   * 登录
-   */
-  async function login(credentials: { userAccount: string; userPassword: string }) {
+  async function login(credentials: {
+    userAccount: string;
+    userPassword: string;
+    captchaUuid?: string;
+    captchaCode?: string;
+  }) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await userApi.login(credentials);
-      if (response.code === 0 && response.data) {
-        setAuth(response.data.token, response.data.refreshToken, response.data.user);
-        return { success: true };
-      }
-      error.value = response.message || '登录失败';
-      return { success: false, message: error.value };
+      const user = await userApi.login(credentials);
+      cacheUser(user);
+      return { success: true };
     } catch (err: any) {
       error.value = err.message || '登录失败';
       return { success: false, message: error.value };
@@ -77,19 +66,20 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * 注册
+   * 注册（成功后需用户手动登录；注册本身不建立会话）
    */
-  async function register(data: { userAccount: string; userPassword: string; checkPassword: string }) {
+  async function register(data: {
+    userAccount: string;
+    userPassword: string;
+    checkPassword: string;
+    captchaUuid?: string;
+    captchaCode?: string;
+  }) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await userApi.register(data);
-      if (response.code === 0 && response.data) {
-        setAuth(response.data.token, response.data.refreshToken, response.data.user);
-        return { success: true };
-      }
-      error.value = response.message || '注册失败';
-      return { success: false, message: error.value };
+      await userApi.register(data);
+      return { success: true };
     } catch (err: any) {
       error.value = err.message || '注册失败';
       return { success: false, message: error.value };
@@ -101,17 +91,18 @@ export const useUserStore = defineStore('user', () => {
   /**
    * 手机号登录
    */
-  async function phoneLogin(phone: string, code: string) {
+  async function phoneLogin(credentials: {
+    userPhone: string;
+    userPassword: string;
+    captchaUuid?: string;
+    captchaCode?: string;
+  }) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await userApi.phoneLogin({ phone, code });
-      if (response.code === 0 && response.data) {
-        setAuth(response.data.token, response.data.refreshToken, response.data.user);
-        return { success: true };
-      }
-      error.value = response.message || '登录失败';
-      return { success: false, message: error.value };
+      const user = await userApi.phoneLogin(credentials);
+      cacheUser(user);
+      return { success: true };
     } catch (err: any) {
       error.value = err.message || '登录失败';
       return { success: false, message: error.value };
@@ -121,7 +112,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * 登出
+   * 登出（后端销毁会话）
    */
   async function logout() {
     try {
@@ -129,42 +120,34 @@ export const useUserStore = defineStore('user', () => {
     } catch {
       // 忽略登出接口错误
     } finally {
-      clearAuth();
+      cacheUser(null);
     }
   }
 
   /**
-   * 刷新用户信息
+   * 向后端校验并刷新登录态（应用启动/路由守卫调用）
    */
-  async function refreshUserInfo() {
-    if (!isLoggedIn.value) return;
+  async function fetchSession() {
     try {
-      const response = await userApi.getLoginUser();
-      if (response.code === 0 && response.data) {
-        userInfo.value = response.data;
-        localStorage.setItem('smartclass_user_info', JSON.stringify(response.data));
-      }
-    } catch (err) {
-      console.error('刷新用户信息失败:', err);
+      const user = await userApi.getLoginUser();
+      cacheUser(user);
+      sessionChecked.value = true;
+    } catch {
+      cacheUser(null);
+      sessionChecked.value = true;
     }
   }
 
   /**
-   * 更新用户资料
+   * 更新当前用户资料
    */
-  async function updateProfile(data: Partial<User>) {
-    if (!userInfo.value) return { success: false, message: '未登录' };
+  async function updateProfile(data: Partial<Pick<LoginUserVO, 'userName' | 'userAvatar' | 'userProfile'>>) {
     loading.value = true;
     error.value = null;
     try {
-      const payload: Partial<User> & { id: number } = { ...data, id: userInfo.value.id as number };
-      const response = await userApi.updateById(payload);
-      if (response) {
-        await refreshUserInfo();
-        return { success: true };
-      }
-      error.value = '更新失败';
-      return { success: false, message: '更新失败' };
+      await userApi.updateMy(data);
+      await fetchSession();
+      return { success: true };
     } catch (err: any) {
       error.value = err.message || '更新失败';
       return { success: false, message: error.value };
@@ -180,16 +163,9 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await userApi.uploadAvatar(file);
-      if (response.code === 0 && response.data) {
-        if (userInfo.value) {
-          userInfo.value.userAvatar = response.data;
-          localStorage.setItem('smartclass_user_info', JSON.stringify(userInfo.value));
-        }
-        return { success: true, url: response.data };
-      }
-      error.value = response.message || '上传失败';
-      return { success: false, message: error.value };
+      const url = await userApi.uploadAvatar(file);
+      await fetchSession();
+      return { success: true, url };
     } catch (err: any) {
       error.value = err.message || '上传失败';
       return { success: false, message: error.value };
@@ -198,20 +174,10 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /**
-   * 设置租户 ID
-   */
-  function setTenantId(newTenantId: string) {
-    tenantId.value = newTenantId;
-    localStorage.setItem('smartclass_tenant_id', newTenantId);
-  }
-
   return {
     // 状态
-    token,
-    refreshToken,
     userInfo,
-    tenantId,
+    sessionChecked,
     loading,
     error,
     // 计算属性
@@ -221,15 +187,12 @@ export const useUserStore = defineStore('user', () => {
     userName,
     userAvatar,
     // Actions
-    setAuth,
-    clearAuth,
     login,
     register,
     phoneLogin,
     logout,
-    refreshUserInfo,
+    fetchSession,
     updateProfile,
-    uploadAvatar,
-    setTenantId
+    uploadAvatar
   };
 });

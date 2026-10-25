@@ -8,6 +8,7 @@ import com.smartclass.smartclass.service.DailyArticleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.Resource;
@@ -19,6 +20,8 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
+// 全量重建为运维动作：默认不在启动时执行，需显式传 --rag.full-sync-on-startup=true。
+// 增量同步走业务写入路径，不受此开关影响。
 public class FullSyncDailyArticleToEs implements CommandLineRunner {
 
     @Resource

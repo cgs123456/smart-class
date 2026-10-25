@@ -1,6 +1,7 @@
 package com.smartclass.smartclass.netty;
 
 import com.alibaba.fastjson2.JSON;
+import com.smartclass.smartclass.constant.UserConstant;
 import com.smartclass.smartclass.constant.WebSocketMessageType;
 import com.smartclass.smartclass.model.dto.websocket.WebSocketMessage;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,6 +12,12 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisCallback;
+
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.List;
@@ -107,30 +114,7 @@ public class WebSocketAuthHandler extends ChannelInboundHandlerAdapter {
                     handleAuthMessage(ctx, message);
                     return;
                 }
-                
-                // 尝试使用旧格式解析和处理（兼容性支持）
-                if (text.contains("\"type\":0")) {
-                    try {
-                        com.smartclass.smartclass.model.websocket.WebSocketMessage oldMessage = 
-                            JSON.parseObject(text, com.smartclass.smartclass.model.websocket.WebSocketMessage.class);
-                        
-                        if (oldMessage.getType() == 0 && oldMessage.getSenderId() != null) {
-                            authenticateUser(ctx, oldMessage.getSenderId());
-                            
-                            // 发送认证成功响应
-                            WebSocketMessage authResponse = new WebSocketMessage();
-                            authResponse.setType(WebSocketMessageType.AUTH_SUCCESS);
-                            authResponse.setContent("认证成功");
-                            ctx.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(authResponse)));
-                            
-                            log.debug("旧格式消息认证成功: {}", oldMessage.getSenderId());
-                            return;
-                        }
-                    } catch (Exception e) {
-                        log.debug("旧格式消息解析失败", e);
-                    }
-                }
-                
+
                 // 如果未认证，拒绝处理消息
                 if (!isAuthenticated(ctx)) {
                     WebSocketMessage authError = new WebSocketMessage();
@@ -160,22 +144,15 @@ public class WebSocketAuthHandler extends ChannelInboundHandlerAdapter {
      * 处理认证消息
      */
     private void handleAuthMessage(ChannelHandlerContext ctx, WebSocketMessage message) {
-        // 获取token或userId
+        // 仅接受 token 认证；senderId 由服务端从 token 解析，客户端上报值一律不采信
         String token = (String) message.getData();
-        Long userId = message.getSenderId();
-        
-        // 优先使用token认证
-        if (StringUtils.isNotBlank(token)) {
-            userId = getUserIdFromToken(token);
-            if (userId == null) {
-                sendAuthError(ctx, "无效的token");
-                return;
-            }
+        if (StringUtils.isBlank(token)) {
+            sendAuthError(ctx, "认证失败，缺少token");
+            return;
         }
-        
-        // 如果没有userId，认证失败
+        Long userId = getUserIdFromToken(token);
         if (userId == null) {
-            sendAuthError(ctx, "认证失败，缺少用户ID或token");
+            sendAuthError(ctx, "无效的token");
             return;
         }
         
@@ -202,12 +179,17 @@ public class WebSocketAuthHandler extends ChannelInboundHandlerAdapter {
             return tokenUserMap.get(token);
         }
         
-        // 从Redis中查找（JSESSIONID映射）
-        String key = "spring:session:" + token;
+        // 从Redis中查找（Spring Session 分布式 session；未开启 spring.session 时此处必然 miss，认证失败关闭）
+        String key = "spring:session:sessions:" + token;
         try {
-            Object userId = redisTemplate.opsForHash().get(key, "sessionAttr:LOGIN_USER_ID");
-            if (userId != null) {
-                Long userIdValue = Long.parseLong(userId.toString());
+            // Spring Session 的 hash 值是 JDK 序列化字节，必须按字节读回并反序列化；
+            // 走 StringRedisTemplate 的字符串视图拿到的是乱码，永远解析不出用户
+            byte[] raw = redisTemplate.execute((RedisCallback<byte[]>) conn -> conn.hashCommands().hGet(
+                    key.getBytes(StandardCharsets.UTF_8),
+                    ("sessionAttr:" + UserConstant.USER_LOGIN_STATE).getBytes(StandardCharsets.UTF_8)));
+            Object loginState = deserialize(raw);
+            Long userIdValue = extractUserId(loginState);
+            if (userIdValue != null) {
                 // 缓存到内存
                 tokenUserMap.put(token, userIdValue);
                 return userIdValue;
@@ -215,8 +197,54 @@ public class WebSocketAuthHandler extends ChannelInboundHandlerAdapter {
         } catch (Exception e) {
             log.debug("从Redis获取用户ID失败", e);
         }
-        
+
         return null;
+    }
+
+    /** JDK 反序列化 Spring Session 属性值；非该格式一律返回 null（fail-closed）。 */
+    private Object deserialize(byte[] raw) {
+        if (raw == null || raw.length == 0) {
+            return null;
+        }
+        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(raw))) {
+            return in.readObject();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 从 session 属性值中提取用户ID。登录态实际存的是 User 对象（可能被序列化为
+     * Map/JSON 字符串），仅提取 id 字段且解析失败一律返回 null（fail-closed）。
+     */
+    @SuppressWarnings("unchecked")
+    private Long extractUserId(Object loginState) {
+        if (loginState == null) {
+            return null;
+        }
+        // 登录态实际存的是 User 实体（JDK 反序列化后原对象）
+        if (loginState instanceof com.smartclass.smartclass.model.entity.User) {
+            return ((com.smartclass.smartclass.model.entity.User) loginState).getId();
+        }
+        if (loginState instanceof Number) {
+            return ((Number) loginState).longValue();
+        }
+        if (loginState instanceof Map) {
+            Object id = ((Map<?, ?>) loginState).get("id");
+            return id instanceof Number ? ((Number) id).longValue() : null;
+        }
+        try {
+            String raw = loginState.toString();
+            if (raw.matches("\\d+")) {
+                return Long.parseLong(raw);
+            }
+            // JSON 序列化的 User 对象：取 id 字段
+            com.alibaba.fastjson2.JSONObject user = JSON.parseObject(raw);
+            Object id = user == null ? null : user.get("id");
+            return id instanceof Number ? ((Number) id).longValue() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
     
     /**

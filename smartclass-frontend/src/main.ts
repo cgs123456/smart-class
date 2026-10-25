@@ -2,8 +2,13 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import Vant, { Lazyload } from 'vant';
-import 'vant/lib/index.css';
+import { Lazyload } from 'vant';
+// Vant 组件样式由 @vant/auto-import-resolver 按需注入；
+// 函数式调用（showToast 等）不经过模板编译，样式需在此集中引入
+import 'vant/es/toast/style';
+import 'vant/es/dialog/style';
+import 'vant/es/image-preview/style';
+import 'vant/es/notify/style';
 // 引入iconfont图标
 import '../public/icons/iconfont.js';
 import '../public/icons/iconfont.css';
@@ -73,8 +78,7 @@ const initCapacitor = async () => {
 };
 
 app.use(router);
-app.use(Vant);
-// 注册 Vant Lazyload 指令，供组件通过 v-lazy 实现图片懒加载
+// Vant 组件本体经 unplugin-vue-components 按需注册；此处仅注册 Lazyload 指令
 app.use(Lazyload);
 app.use(pinia);
 

@@ -50,6 +50,27 @@ public class MybatisPlusConfig {
     }
 
     /**
+     * 字段自动填充：实体普遍使用 @TableField(fill = INSERT/INSERT_UPDATE) 声明
+     * createTime/updateTime（java.util.Date），缺少本 Handler 时 MyBatis-Plus 会
+     * 显式插入 NULL，被数据库 NOT NULL 拒绝（依赖列默认值也无法兜底）。
+     */
+    @Bean
+    public com.baomidou.mybatisplus.core.handlers.MetaObjectHandler metaObjectHandler() {
+        return new com.baomidou.mybatisplus.core.handlers.MetaObjectHandler() {
+            @Override
+            public void insertFill(org.apache.ibatis.reflection.MetaObject metaObject) {
+                this.strictInsertFill(metaObject, "createTime", java.util.Date.class, new java.util.Date());
+                this.strictInsertFill(metaObject, "updateTime", java.util.Date.class, new java.util.Date());
+            }
+
+            @Override
+            public void updateFill(org.apache.ibatis.reflection.MetaObject metaObject) {
+                this.strictUpdateFill(metaObject, "updateTime", java.util.Date.class, new java.util.Date());
+            }
+        };
+    }
+
+    /**
      * 全局配置
      */
     @Bean

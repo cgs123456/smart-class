@@ -54,8 +54,13 @@ public class DifyChatServiceImpl implements DifyChatService {
     @Autowired(required = false)
     private LearningPathService learningPathService;
 
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("aiStreamExecutor")
+    private java.util.concurrent.Executor aiStreamExecutor;
+
     @Override
-    @Transactional
+    // 注意：此方法内部发起 OkHttp 同步外呼，不得加 @Transactional——
+    // 否则外部调用的整个耗时都会占用一个数据库连接（连接池耗尽的主因）
     public AiAvatarChatHistory sendChatMessage(Long userId, Long aiAvatarId, String sessionId, String content,
                                                String baseUrl, String avatarAuth) {
         // 创建用户消息对象
@@ -162,7 +167,8 @@ public class DifyChatServiceImpl implements DifyChatService {
     }
 
     @Override
-    @Transactional
+    // 注意：SSE 流式读取可能持续数分钟，严禁在此方法上开启事务——
+    // 事务会跨整个流式周期占用数据库连接
     public AiAvatarChatHistory sendChatMessageStreaming(Long userId, Long aiAvatarId, String sessionId,
                                                         String content, String baseUrl, String avatarAuth,
                                                         DifyService.DifyStreamCallback callback) {
@@ -257,7 +263,7 @@ public class DifyChatServiceImpl implements DifyChatService {
                     throw new RuntimeException("Dify API返回空响应");
                 }
 
-                // 使用CompletableFuture异步处理流式响应
+                // 使用CompletableFuture异步处理流式响应（专用线程池，避免占用 ForkJoinPool.commonPool）
                 CompletableFuture.runAsync(() -> {
                     // 使用BufferedReader逐行读取SSE流
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(responseBody.byteStream()))) {
@@ -354,7 +360,7 @@ public class DifyChatServiceImpl implements DifyChatService {
                             log.error("关闭响应体异常");
                         }
                     }
-                });
+                }, aiStreamExecutor);
 
                 // 创建一个消息对象返回，实际内容会被异步更新
                 AiAvatarChatHistory aiResponse = chatMessageHelper.createEmptyAiResponse(userId, aiAvatarId, sessionId);

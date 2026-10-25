@@ -20,7 +20,7 @@ import java.util.List;
  * 帖子 ES 包装类
  *
  **/
-@Document(indexName = "post")
+@Document(indexName = "post", createIndex = false)
 @Data
 public class PostEsDTO implements Serializable {
 

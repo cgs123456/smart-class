@@ -55,7 +55,7 @@ public class LoggingResponseDecorator extends org.springframework.http.server.re
         Map<String, Object> responseLog = filter.buildResponseLog(
                 request, getDelegate(), traceId, spanId, 
                 java.time.Duration.between(startTime, endTime), 
-                new java.util.concurrent.ConcurrentHashMap<String, Object>(),
+                requestLog,
                 exchange);
         log.info("gateway_response: {}", filter.toJson(responseLog));
         
@@ -67,10 +67,11 @@ public class LoggingResponseDecorator extends org.springframework.http.server.re
         Instant endTime = java.time.Instant.now();
         java.time.Duration latency = java.time.Duration.between(startTime, endTime);
         
+        Map<String, Object> requestLog2 = (Map<String, Object>) exchange.getAttributes().getOrDefault("requestLog", new java.util.concurrent.ConcurrentHashMap<String, Object>());
         Map<String, Object> responseLog = filter.buildResponseLog(
                 request, getDelegate(), traceId, spanId,
                 java.time.Duration.between(startTime, endTime),
-                new java.util.concurrent.ConcurrentHashMap<String, Object>(),
+                requestLog2,
                 exchange);
         log.info("gateway_response: {}", filter.toJson(responseLog));
         

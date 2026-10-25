@@ -1,6 +1,7 @@
 package com.smartclass.smartclass.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
@@ -21,21 +22,21 @@ public class ObservabilityConfig {
     private String applicationName;
 
     /**
-     * 配置通用标签
+     * 配置通用标签（customizer 由 Boot 无环注入 composite registry，
+     * 禁止再声明 MeterRegistry 类型的 @Bean——会与 compositeMeterRegistry 成环）
      */
     @Bean
-    public MeterRegistry meterRegistry(MeterRegistry registry) {
-        registry.config()
+    public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags() {
+        return registry -> registry.config()
                 .commonTags("application", applicationName)
                 .commonTags("environment", System.getenv().getOrDefault("ENVIRONMENT", "development"));
-        return registry;
     }
 
     /**
      * JVM 内存指标
      */
     @Bean
-    public JvmMemoryMetrics jvmMemoryMetrics(MeterRegistry registry) {
+    public JvmMemoryMetrics jvmMemoryMetrics() {
         return new JvmMemoryMetrics();
     }
 
@@ -43,7 +44,7 @@ public class ObservabilityConfig {
      * JVM GC 指标
      */
     @Bean
-    public JvmGcMetrics jvmGcMetrics(MeterRegistry registry) {
+    public JvmGcMetrics jvmGcMetrics() {
         return new JvmGcMetrics();
     }
 
@@ -51,7 +52,7 @@ public class ObservabilityConfig {
      * JVM 线程指标
      */
     @Bean
-    public JvmThreadMetrics jvmThreadMetrics(MeterRegistry registry) {
+    public JvmThreadMetrics jvmThreadMetrics() {
         return new JvmThreadMetrics();
     }
 
@@ -59,7 +60,7 @@ public class ObservabilityConfig {
      * CPU 处理器指标
      */
     @Bean
-    public ProcessorMetrics processorMetrics(MeterRegistry registry) {
+    public ProcessorMetrics processorMetrics() {
         return new ProcessorMetrics();
     }
 
@@ -67,7 +68,7 @@ public class ObservabilityConfig {
      * 文件描述符指标
      */
     @Bean
-    public FileDescriptorMetrics fileDescriptorMetrics(MeterRegistry registry) {
+    public FileDescriptorMetrics fileDescriptorMetrics() {
         return new FileDescriptorMetrics();
     }
 }

@@ -362,13 +362,9 @@ router.beforeEach(
     const { useUserStore } = await import('../stores/userStore');
     const userStore = useUserStore();
 
-    // 优先检查 store 中的登录状态（响应式），其次检查 localStorage
-    // 注意：当前依赖"头像是否为默认值"作为登录态信号之一，逻辑相对脆弱。
-    // 后续可优化为独立的 isAuthenticated 判断逻辑，例如：
-    //   const isLoggedIn = localStorage.getItem('userInfo') !== null;
-    // 现暂保留头像判断以避免破坏现有功能。
-    const isLoggedIn = userStore.getUserAvatar() !== userStore.DEFAULT_USER_AVATAR
-      || localStorage.getItem('userInfo') !== null;
+    // 登录态以 store 中是否持有真实用户 id 为准（登录成功才写入，
+    // 游客兜底对象无 id），不再依赖「头像是否为默认值」的脆弱启发式
+    const isLoggedIn = userStore.isLoggedIn();
 
     if (to.meta.requiresAuth && !isLoggedIn) {
       next({

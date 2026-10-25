@@ -10,9 +10,5 @@
   ],
   "scripts": {
     "test": "echo \"tsconfig package - no tests\""
-  },
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.smartclass.cn/"
   }
 }
