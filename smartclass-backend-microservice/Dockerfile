@@ -23,7 +23,7 @@ COPY smartclass-backend-model ./smartclass-backend-model
 COPY smartclass-backend-service-client ./smartclass-backend-service-client
 
 # 拷贝目标服务源码
-COPY ${SERVICE_DIR} ./ ${SERVICE_DIR}
+COPY ${SERVICE_DIR} ./${SERVICE_DIR}
 
 # 仅构建目标服务（跳过测试以加速构建）
 RUN mvn -B clean package -pl ${SERVICE_DIR} -am -DskipTests

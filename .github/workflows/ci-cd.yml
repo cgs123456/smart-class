@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+# 新仓库默认 GITHUB_TOKEN 只读：GHCR 推送需显式授予 packages:write
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
