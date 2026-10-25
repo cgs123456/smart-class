@@ -55,3 +55,6 @@ Thumbs.db
 
 # pnpm
 *.pnpm-debug.log*
+
+# ESLint 增量缓存
+.eslintcache
