@@ -45,7 +45,7 @@ window.handleBackButton = () => {
       router.back();
       return true;
     }
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -55,7 +55,7 @@ const pinia = createPinia();
 
 // 全局错误处理器，防止未捕获的错误导致整个应用崩溃
 // TODO: 后续可接入错误上报系统（如 Sentry），需配置 DSN 与环境信息
-app.config.errorHandler = (err, instance, info) => {
+app.config.errorHandler = (err) => {
   console.error('Global error:', err);
 };
 
@@ -68,11 +68,10 @@ const initCapacitor = async () => {
     // 隐藏启动页
     await SplashScreen.hide();
 
-    // 检查网络状态
-    const networkStatus = await capacitor.networkServices.getNetworkStatus();
+    // 触发网络状态初始化并注册监听，网络恢复由各页面自行订阅
+    await capacitor.networkServices.getNetworkStatus();
 
-    // 监听网络变化
-    capacitor.networkServices.addNetworkListener((status) => {
+    capacitor.networkServices.addNetworkListener(() => {
     });
   }
 };

@@ -31,7 +31,7 @@ export function mapCourseVO(vo: CourseVO): Course {
     brief: vo.subtitle || vo.description || '',
     cover: vo.coverImage || '',
     tag: firstTag || level,
-    tagColor: levelTagColor[level],
+    tagColor: levelTagColor[level] ?? '',
     level,
     duration: vo.totalDuration ?? 0,
     studentsCount: vo.studyCount ?? vo.buyCount ?? 0,

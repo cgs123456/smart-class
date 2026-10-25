@@ -141,12 +141,8 @@ const PostManagement: React.FC = () => {
       fieldProps: {
         placeholder: '请输入标签，多个标签用逗号分隔'
       },
-      renderFormItem: (_, { type, defaultRender, ...rest }) => {
-        if (type === 'form') {
-          return defaultRender({ ...rest, fieldProps: { placeholder: '请输入标签，多个标签用逗号分隔' } });
-        }
-        return defaultRender(rest);
-      },
+      renderFormItem: (_, { defaultRender }) =>
+        defaultRender({ fieldProps: { placeholder: '请输入标签，多个标签用逗号分隔' } }),
       render: (_, record) => (
         <Space wrap>
           {record.tagList?.map((tag) => (
@@ -281,7 +277,10 @@ const PostManagement: React.FC = () => {
           ]}
           request={async (params, sort, filter) => {
             const sortField = Object.keys(sort)?.[0];
-            const sortOrder = sortField ? sort[sortField] : undefined;
+            // ProTable 的 SortOrder 取值含 null/boolean，转换为接口要求的 'ascend'/'descend'
+            const rawOrder = sortField ? sort[sortField] : undefined;
+            const sortOrder =
+              rawOrder === 'ascend' || rawOrder === 'descend' ? rawOrder : undefined;
             
             const { data, code } = await listPostVoByPageUsingGet({
               ...params,

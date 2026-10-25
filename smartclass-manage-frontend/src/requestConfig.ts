@@ -30,7 +30,7 @@ export const requestConfig: RequestConfig = {
       const csrfToken = document.cookie
         .match(/csrfToken=([^;]+)/)?.[1];
       if (csrfToken) {
-        config.headers['X-CSRF-Token'] = csrfToken;
+        config.headers = { ...config.headers, 'X-CSRF-Token': csrfToken };
       }
       return config;
     },

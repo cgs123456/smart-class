@@ -20,10 +20,34 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # 钉住 Maven 3.9.x：runner 镜像预装版本可能漂移到 4.x，
+      # Maven 4 对 POM 中的重复依赖声明直接判错（曾致微服务编译全线失败）
+      - name: Pin Maven 3.9.9
+        run: |
+          curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz | tar -xz -C /opt
+          echo /opt/apache-maven-3.9.9/bin >> "$GITHUB_PATH"
+
       - name: Build单体后端
         working-directory: smartclass-backend
-        run: mvn -B compile --file pom.xml
+        run: |
+          set -o pipefail
+          mvn -B compile --file pom.xml 2>&1 | tee mono_build.log
 
       - name: Build微服务后端
         working-directory: smartclass-backend-microservice
-        run: mvn -B compile --file pom.xml
+        run: |
+          set -o pipefail
+          mvn -B compile --file pom.xml 2>&1 | tee ms_build.log
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          {
+            echo "### Toolchain"
+            mvn -version
+            echo '```text'
+            for f in smartclass-backend/mono_build.log smartclass-backend-microservice/ms_build.log; do
+              [ -f "$f" ] && { echo "--- $f"; tail -c 4000 "$f"; }
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

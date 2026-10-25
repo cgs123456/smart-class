@@ -208,7 +208,9 @@ export const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptio
         resolve(options, config.HEADERS),
     ]);
 
-    const formHeaders = typeof formData?.getHeaders === 'function' && formData?.getHeaders() || {}
+    // Node 端 FormData 带有 getHeaders()，浏览器 DOM 类型上没有——经窄化类型访问
+    const nodeForm = formData as { getHeaders?: () => Record<string, string> } | undefined;
+    const formHeaders = (typeof nodeForm?.getHeaders === 'function' && nodeForm.getHeaders()) || {};
 
     const headers = Object.entries({
         Accept: 'application/json',

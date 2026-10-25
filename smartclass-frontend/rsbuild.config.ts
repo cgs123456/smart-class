@@ -2,7 +2,6 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginVue } from '@rsbuild/plugin-vue';
 import Components from 'unplugin-vue-components/rspack';
 import { VantResolver } from '@vant/auto-import-resolver';
-import type { RsbuildConfig } from '@rsbuild/core';
 
 export default defineConfig({
   plugins: [pluginVue()],
@@ -48,7 +47,7 @@ export default defineConfig({
         },
       },
     },
-    bundlerChain: (chain, utils) => {
+    bundlerChain: (chain) => {
       // 注意：当前通过手动 patch define 插件 args 的方式注入 VITE_ 前缀环境变量。
       // 后续可优化为 Rsbuild 原生支持的 source.define 配置项，例如：
       //   source: { define: { 'import.meta.env.VITE_XXX': JSON.stringify(process.env.VITE_XXX) } }

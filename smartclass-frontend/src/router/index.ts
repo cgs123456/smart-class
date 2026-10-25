@@ -356,7 +356,7 @@ const router = createRouter({
 router.beforeEach(
   async (
     to: RouteLocationNormalized,
-    from: RouteLocationNormalized,
+    _from: RouteLocationNormalized,
     next: NavigationGuardNext,
   ) => {
     const { useUserStore } = await import('../stores/userStore');

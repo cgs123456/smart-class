@@ -47,13 +47,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.smartclass</groupId>
-            <artifactId>smartclass-backend-model</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        
+
         <!-- Knife4j OpenAPI3 文档 -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
