@@ -1,19 +1,16 @@
 # 构建阶段
-FROM node:18.17-alpine as builder
+FROM node:20-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
 
-# 复制项目依赖文件
-COPY package.json ./
-COPY *.lock* ./
-COPY pnpm-lock.yaml* ./
+# 复制项目依赖文件（与 package-lock.json 配套，保证可复现安装）
+COPY package.json package-lock.json ./
 
-# 安装依赖
-RUN npm install
+# 安装依赖（npm ci 严格按 lockfile，避免 semver 漂移）
+RUN npm ci
 
 # 复制所有文件
-
 COPY . .
 
 # 构建应用

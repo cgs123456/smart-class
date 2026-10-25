@@ -450,6 +450,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # 匿名读者看不到 job 日志，把镜像构建尾部写进 Step Summary 以便远程排障
+      - name: Dump admin image build tail on failure
+        if: failure()
+        run: |
+          echo '## Admin image build tail' >> $GITHUB_STEP_SUMMARY
+          docker build --progress=plain --target builder \
+            ./smartclass-manage-frontend 2>&1 | tail -80 >> $GITHUB_STEP_SUMMARY || true
+
   # ========== 集成测试 ==========
   integration-test:
     name: Integration Test
