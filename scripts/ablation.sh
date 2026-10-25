@@ -3,7 +3,9 @@
 # 预期（修复后）：全部响应无 500；日志出现 "Session key vanished" WARN；无 "Session was invalidated" ERROR
 cd "C:\Users\Administrator\Desktop\smart class\scripts"
 LOG=runtime-run.log
-REDIS="docker exec redbook-redis redis-cli -a redis123 -n 1 --no-auth-warning"
+# Redis 凭据运行时从容器实况提取，禁止把真实密码写进仓库
+RP=$(docker inspect redbook-redis --format '{{join .Args " "}}' | grep -oP '(?<=--requirepass )\S+')
+REDIS="docker exec redbook-redis redis-cli -a $RP -n 1 --no-auth-warning"
 endpoints=(daily-articles/today daily-words/today course/recommend ai-avatars/page announcements/page)
 
 for cycle in 1 2 3 4 5 6 7 8; do
