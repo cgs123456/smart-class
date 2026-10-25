@@ -2,6 +2,7 @@ import { defaultSchema } from 'rehype-sanitize';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import rehypeKatex from 'rehype-katex';
+import type { PluggableList } from 'unified';
 
 /**
  * 帖子/文章内容来自普通用户，服务端不清洗富文本，因此渲染端必须消毒：
@@ -26,9 +27,10 @@ const sanitizeSchema = {
   },
 };
 
-/** 统一的安全 rehype 插件管线：Raw → Sanitize → KaTeX */
-export const safeRehypePlugins = [
+/** 统一的安全 rehype 插件管线：Raw → Sanitize → KaTeX。
+ *  显式 PluggableList（unified 11 起拒绝 readonly 元组），不得写 as const。 */
+export const safeRehypePlugins: PluggableList = [
   rehypeRaw,
   [rehypeSanitize, { schema: sanitizeSchema }],
   rehypeKatex,
-] as const;
+];
