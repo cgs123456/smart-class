@@ -6,7 +6,7 @@ spring:
   # 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${TEST_MYSQL_URL:jdbc:mysql://localhost:3306/my_db}
+    url: ${TEST_MYSQL_URL:jdbc:mysql://localhost:3306/smart_class}
     username: ${MYSQL_USERNAME:smartclass_app}
     password: ${MYSQL_PASSWORD}
   # Redis 配置

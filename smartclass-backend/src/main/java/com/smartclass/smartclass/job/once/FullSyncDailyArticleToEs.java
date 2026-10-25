@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
  * 全量同步每日美文到 ES
  */
 @Component
+@ConditionalOnProperty(name = "rag.full-sync-on-startup", havingValue = "true")
 @Slf4j
 // 全量重建为运维动作：默认不在启动时执行，需显式传 --rag.full-sync-on-startup=true。
 // 增量同步走业务写入路径，不受此开关影响。

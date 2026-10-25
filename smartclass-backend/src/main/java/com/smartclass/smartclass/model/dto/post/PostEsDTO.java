@@ -14,6 +14,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -95,9 +96,30 @@ public class PostEsDTO implements Serializable {
         BeanUtils.copyProperties(post, postEsDTO);
         String tagsStr = post.getTags();
         if (StringUtils.isNotBlank(tagsStr)) {
-            postEsDTO.setTags(JSONUtil.toList(tagsStr, String.class));
+            postEsDTO.setTags(parseTags(tagsStr));
         }
         return postEsDTO;
+    }
+
+    /**
+     * tags 列历史上存在两种存储格式：JSON 数组字符串与逗号分隔字符串，均需兼容。
+     */
+    private static List<String> parseTags(String tagsStr) {
+        String trimmed = tagsStr.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                return JSONUtil.toList(trimmed, String.class);
+            } catch (Exception ignored) {
+                // 非法 JSON 时退回逗号分隔解析
+            }
+        }
+        List<String> result = new ArrayList<>();
+        for (String part : trimmed.split("[，,]")) {
+            if (StringUtils.isNotBlank(part)) {
+                result.add(part.trim());
+            }
+        }
+        return result;
     }
 
     /**

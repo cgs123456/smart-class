@@ -27,7 +27,8 @@ spring:
   # todo 需替换配置，然后取消注释
   data:
     redis:
-      database: 0
+      # 使用 db 1：同机多项目共用 Redis 实例时与对方 db 0 隔离，避免对方清库殃及会话与缓存
+      database: 1
       host: localhost
       port: 6379
       timeout: 5000
