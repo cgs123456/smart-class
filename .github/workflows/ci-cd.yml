@@ -514,8 +514,15 @@ jobs:
           REDIS_PASSWORD: ""
           JWT_SECRET: dummy-secret-for-ci-pipeline-only
 
+      # 多模块 reactor 直接调 failsafe 不会先构建兄弟模块产物（course 依赖 file 模块的
+      # jar 无法解析）；当前仓库没有 *IT.java，守卫到真实出现集成测试源码时才启用
       - name: Run Integration Tests (Microservices)
-        run: mvn -B failsafe:integration-test failsafe:verify
+        run: |
+          if find . -name "*IT.java" | grep -q .; then
+            mvn -B failsafe:integration-test failsafe:verify
+          else
+            echo "No *IT.java in microservice modules — integration topology (Nacos/Dubbo runtime) not exercised here, nothing to run"
+          fi
         working-directory: ./smartclass-backend-microservice
         env:
           MYSQL_PASSWORD: test
