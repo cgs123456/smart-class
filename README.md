@@ -13,6 +13,26 @@
 - **VIP 支付**：订单/回调验签/会员权益，支持模拟支付联调开关
 - **管理端**：用户/课程/内容/反馈管理与数据看板
 
+## 界面预览
+
+移动端（Vue3 + Vant）：
+
+<p>
+  <img src="docs/screenshots/mobile-home.png" width="180" alt="移动端首页"/>
+  <img src="docs/screenshots/mobile-courses.png" width="180" alt="课程广场"/>
+  <img src="docs/screenshots/mobile-course-study.png" width="180" alt="课程学习"/>
+  <img src="docs/screenshots/mobile-circle.png" width="180" alt="学习圈子"/>
+  <img src="docs/screenshots/mobile-chat.png" width="180" alt="聊天与智慧体中心"/>
+</p>
+
+管理端（React18 + Ant Design）：
+
+<p>
+  <img src="docs/screenshots/admin-dashboard.png" width="320" alt="管理端欢迎页"/>
+  <img src="docs/screenshots/admin-datapanel.png" width="320" alt="数据看板"/>
+  <img src="docs/screenshots/admin-user.png" width="320" alt="用户管理"/>
+</p>
+
 ## 快速开始（单体模式）
 
 环境要求：JDK 17、Maven 3.8+、Node ≥18、MySQL 8、Redis 7、Elasticsearch 8.15（可选，仅 AI 检索需要）。
@@ -96,7 +116,7 @@ COS 对象存储用例未配置凭证时自动跳过。
 
 ## 更多文档
 
-[docs/](docs/)（模块设计、OpenAPI 客户端生成）· [项目优化评审报告.md](项目优化评审报告.md)（全量问题清单与修复实录，附录 A–I）
+[docs/](docs/)（模块设计、OpenAPI 客户端生成）· [项目优化评审报告.md](项目优化评审报告.md)（全量问题清单与修复实录，附录 A–K）
 
 ## 许可证
 

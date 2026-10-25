@@ -3,12 +3,14 @@ package com.smartclass.smartclass.model.vo;
 import cn.hutool.json.JSONUtil;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import com.smartclass.smartclass.model.entity.Post;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * 帖子视图
@@ -120,7 +122,32 @@ public class PostVO implements Serializable {
         }
         PostVO postVO = new PostVO();
         BeanUtils.copyProperties(post, postVO);
-        postVO.setTagList(JSONUtil.toList(post.getTags(), String.class));
+        postVO.setTagList(parseTags(post.getTags()));
         return postVO;
+    }
+
+    /**
+     * tags 列历史上存在两种存储格式：JSON 数组字符串与逗号分隔字符串，均需兼容。
+     * 与 PostEsDTO.parseTags 保持同一语义，暂不抽象：两处字段语义独立演进。
+     */
+    private static List<String> parseTags(String tagsStr) {
+        if (StringUtils.isBlank(tagsStr)) {
+            return new ArrayList<>();
+        }
+        String trimmed = tagsStr.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                return JSONUtil.toList(trimmed, String.class);
+            } catch (Exception ignored) {
+                // 非法 JSON 时退回逗号分隔解析
+            }
+        }
+        List<String> result = new ArrayList<>();
+        for (String part : trimmed.split("[，,]")) {
+            if (StringUtils.isNotBlank(part)) {
+                result.add(part.trim());
+            }
+        }
+        return result;
     }
 }
