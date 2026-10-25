@@ -89,6 +89,12 @@
             <artifactId>easyexcel</artifactId>
             <version>4.0.3</version>
         </dependency>
+        <!-- easyexcel 4.x(poi 5.x) 需要 commons-io 2.11+，覆盖 cos_api 传递进来的 2.7 -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.15.1</version>
+        </dependency>
         <!-- https://hutool.cn/docs/index.html#/-->
         <dependency>
             <groupId>cn.hutool</groupId>

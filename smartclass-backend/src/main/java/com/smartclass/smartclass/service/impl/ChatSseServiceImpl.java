@@ -285,6 +285,12 @@ public class ChatSseServiceImpl implements ChatSseService {
         // 遍历所有SSE连接并发送用户状态更新
         boolean allSucceeded = true;
         
+        // 状态变更用户信息与接收者无关，只查一次，避免在广播循环内重复查询
+        User user = userService.getById(userId);
+        if (user == null) {
+            log.error("用户 {} 不存在", userId);
+            return false;
+        }
         for (Long receiverId : userEmitters.keySet()) {
             // 获取用户的SSE发射器
             SseEmitter emitter = userEmitters.get(receiverId);
@@ -293,13 +299,7 @@ public class ChatSseServiceImpl implements ChatSseService {
             }
             
             try {
-                // 获取状态变更用户信息
-                User user = userService.getById(userId);
-                if (user == null) {
-                    log.error("用户 {} 不存在", userId);
-                    continue;
-                }
-                
+
                 // 构建WebSocket消息模型
                 WebSocketMessage message = new WebSocketMessage();
                 message.setType(WebSocketMessageType.USER_STATUS);

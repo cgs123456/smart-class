@@ -265,8 +265,5 @@ export { UserAiAvatarControllerService } from './services/UserAiAvatarController
 export { UserControllerService } from './services/UserControllerService';
 export { UserFeedbackControllerService } from './services/UserFeedbackControllerService';
 export { UserFeedbackReplyControllerService } from './services/UserFeedbackReplyControllerService';
-export { UserLearningRecordControllerService } from './services/UserLearningRecordControllerService';
-export { UserLearningStatsControllerService } from './services/UserLearningStatsControllerService';
-export { UserLevelControllerService } from './services/UserLevelControllerService';
 export { UserWordBookControllerService } from './services/UserWordBookControllerService';
 export { WxMpControllerService } from './services/WxMpControllerService';

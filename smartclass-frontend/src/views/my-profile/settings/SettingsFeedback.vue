@@ -328,12 +328,7 @@ const replyFileList = ref<UploaderFileListItem[]>([]);
 const fetchFeedbackHistory = async () => {
   isLoading.value = true;
   try {
-    const response = await UserFeedbackControllerService.listUserFeedbackByPageUsingPost({
-      current: 1,
-      pageSize: 10,
-      sortField: 'createTime',
-      sortOrder: 'descend',
-    });
+    const response = await UserFeedbackControllerService.listUserFeedbackByPageUsingGet(1, undefined, 10, 'createTime', 'descend');
     
     if (response.code === 0 && response.data && response.data.records) {
       historyFeedbacks.value = response.data.records;
@@ -490,7 +485,7 @@ const fetchFeedbackReplies = async (feedbackId?: number) => {
       // 标记所有未读回复为已读
       response.data.forEach(reply => {
         if (reply.isRead === 0 && reply.id) {
-          UserFeedbackReplyControllerService.markAsReadUsingPost(reply.id);
+          UserFeedbackReplyControllerService.markAsReadUsingPut(reply.id);
         }
       });
     }

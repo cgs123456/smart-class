@@ -512,27 +512,56 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
                             .last("LIMIT " + offset + ", " + limit)
             );
             
-            for (Map<String, Object> resultMap : resultMaps) {
-                String sessionId = (String) resultMap.get("sessionId");
-                if (StringUtils.hasLength(sessionId) == false) {
-                    continue;
+            // ——批量化：固定 3 组查询取代每会话 getOne/count/selectById 的 3N 次查询——
+            List<String> sessionIds = resultMaps.stream()
+                    .map(row -> (String) row.get("sessionId"))
+                    .filter(StringUtils::hasLength)
+                    .collect(Collectors.toList());
+            if (sessionIds.isEmpty()) {
+                return sessionList;
+            }
+
+            // 每个会话的消息数（按 userId 限定，避免同 sessionId 串扰计数）
+            Map<String, Long> countBySession = new HashMap<>();
+            for (Map<String, Object> row : this.baseMapper.selectMaps(new QueryWrapper<AiAvatarChatHistory>()
+                    .select("sessionId", "COUNT(*) AS cnt")
+                    .eq("userId", userId)
+                    .in("sessionId", sessionIds)
+                    .groupBy("sessionId"))) {
+                countBySession.put((String) row.get("sessionId"), ((Number) row.get("cnt")).longValue());
+            }
+
+            // 每个会话的最后一条消息 = 会话内 id 最大的记录（MAX(id) 在 createTime 并列时也无歧义）
+            List<Long> lastMessageIds = this.baseMapper.selectMaps(new QueryWrapper<AiAvatarChatHistory>()
+                    .select("MAX(id) AS mid")
+                    .eq("userId", userId)
+                    .in("sessionId", sessionIds)
+                    .groupBy("sessionId"))
+                    .stream()
+                    .map(row -> ((Number) row.get("mid")).longValue())
+                    .collect(Collectors.toList());
+            Map<String, AiAvatarChatHistory> lastMessageBySession = new HashMap<>();
+            for (AiAvatarChatHistory msg : this.listByIds(lastMessageIds)) {
+                if (msg.getSessionId() != null) {
+                    lastMessageBySession.put(msg.getSessionId(), msg);
                 }
-                
-                // 查询会话的最后一条消息和详细信息
-                QueryWrapper<AiAvatarChatHistory> lastMessageQuery = new QueryWrapper<>();
-                lastMessageQuery.eq("sessionId", sessionId)
-                        .orderByDesc("createTime")
-                        .last("LIMIT 1");
-                
-                AiAvatarChatHistory lastMessage = this.getOne(lastMessageQuery);
+            }
+
+            // 涉及的 AI 分身信息一次性取回
+            Set<Long> avatarIds = lastMessageBySession.values().stream()
+                    .map(AiAvatarChatHistory::getAiAvatarId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            Map<Long, AiAvatar> avatarById = avatarIds.isEmpty() ? Collections.emptyMap()
+                    : aiAvatarMapper.selectBatchIds(avatarIds).stream()
+                    .collect(Collectors.toMap(AiAvatar::getId, avatar -> avatar));
+
+            for (String sessionId : sessionIds) {
+                AiAvatarChatHistory lastMessage = lastMessageBySession.get(sessionId);
                 if (lastMessage == null) {
                     continue;
                 }
-                
-                // 查询会话的消息数量
-                long msgCount = this.count(new QueryWrapper<AiAvatarChatHistory>()
-                        .eq("sessionId", sessionId));
-                
+
                 // 构建会话VO
                 ChatSessionVO sessionVO = new ChatSessionVO();
                 sessionVO.setSessionId(sessionId);
@@ -540,18 +569,18 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
                 sessionVO.setAiAvatarId(lastMessage.getAiAvatarId());
                 sessionVO.setLastMessage(lastMessage.getContent());
                 sessionVO.setLastMessageTime(lastMessage.getCreateTime());
-                sessionVO.setMessageCount((int) msgCount);
-                
+                sessionVO.setMessageCount(countBySession.getOrDefault(sessionId, 0L).intValue());
+
                 // 获取AI分身信息
-                AiAvatar aiAvatar = aiAvatarMapper.selectById(lastMessage.getAiAvatarId());
+                AiAvatar aiAvatar = avatarById.get(lastMessage.getAiAvatarId());
                 if (aiAvatar != null) {
                     sessionVO.setAiAvatarName(aiAvatar.getName());
                     sessionVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
                 }
-                
+
                 sessionList.add(sessionVO);
             }
-            
+
             return sessionList;
         } catch (Exception e) {
             log.error("获取历史对话列表失败", e);

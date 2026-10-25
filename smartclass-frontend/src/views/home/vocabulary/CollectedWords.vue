@@ -432,7 +432,22 @@ const fetchWordBookData = async () => {
       difficulty: getDifficultyValue(),
     };
 
-    const response = await UserWordBookControllerService.listUserWordBookByPageUsingPost(queryParams);
+    const response = await UserWordBookControllerService.listUserWordBookByPageUsingGet(
+      undefined,
+      undefined,
+      undefined,
+      currentPage.value,
+      getDifficultyValue(),
+      undefined,
+      isCollected.value,
+      learningStatus.value,
+      pageSize.value,
+      getSortField(),
+      getSortOrder(),
+      undefined,
+      searchText.value || undefined,
+      undefined,
+    );
     
     if (response.code === 0 && response.data) {
       const { records, total: totalCount } = response.data;
@@ -511,12 +526,10 @@ const toggleMastered = async (word: CollectedWord) => {
   
   try {
     const newStatus = !word.mastered;
-    const updateStatusRequest = {
-      wordId: word.wordId || word.id,
-      learningStatus: newStatus ? 1 : 0,
-    };
-    
-    const response = await UserWordBookControllerService.updateLearningStatusUsingPost(updateStatusRequest);
+    const response = await UserWordBookControllerService.updateLearningStatusUsingPut(
+      { learningStatus: newStatus ? 1 : 0 },
+      word.wordId || word.id,
+    );
     
     if (response.code === 0 && response.data) {
       // 更新本地状态
@@ -558,7 +571,7 @@ const removeWord = async () => {
   
   try {
     const wordId = wordToDelete.value.wordId || wordToDelete.value.id;
-    const response = await UserWordBookControllerService.removeFromWordBookUsingPost(wordId);
+    const response = await UserWordBookControllerService.removeFromWordBookUsingDelete(wordId);
     
     if (response.code === 0 && response.data) {
       // 从本地列表移除
