@@ -3,9 +3,9 @@ import { userRegisterUsingPost } from '@/services/backend/userController';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
 import { useEmotionCss } from '@ant-design/use-emotion-css';
-import { Helmet, history } from '@umijs/max';
+import { Helmet, history, request } from '@umijs/max';
 import { message, Tabs } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'umi';
 import Settings from '../../../../config/defaultSettings';
 
@@ -15,6 +15,28 @@ import Settings from '../../../../config/defaultSettings';
  */
 const UserRegisterPage: React.FC = () => {
   const [type, setType] = useState<string>('account');
+  // 图形验证码（后端 /api/captcha，一次一用，失败或提交后需刷新）
+  const [captcha, setCaptcha] = useState<{ uuid: string; image: string }>({
+    uuid: '',
+    image: '',
+  });
+
+  const refreshCaptcha = async () => {
+    try {
+      const res = await request<{ code: number; data?: { uuid?: string; captchaImage?: string } }>(
+        '/api/captcha',
+      );
+      if (res?.code === 0 && res.data) {
+        setCaptcha({ uuid: res.data.uuid || '', image: res.data.captchaImage || '' });
+      }
+    } catch (e) {
+      console.error('获取验证码失败', e);
+    }
+  };
+
+  useEffect(() => {
+    refreshCaptcha();
+  }, []);
   const containerClassName = useEmotionCss(() => {
     return {
       display: 'flex',
@@ -44,6 +66,7 @@ const UserRegisterPage: React.FC = () => {
       // 注册
       await userRegisterUsingPost({
         ...values,
+        captchaUuid: captcha.uuid,
       });
 
       const defaultLoginSuccessMessage = '注册成功！';
@@ -53,6 +76,8 @@ const UserRegisterPage: React.FC = () => {
     } catch (error: any) {
       const defaultLoginFailureMessage = `注册失败，${error.message}`;
       message.error(defaultLoginFailureMessage);
+      // 验证码一次一用，失败后刷新以便重试
+      refreshCaptcha();
     }
   };
 
@@ -75,8 +100,8 @@ const UserRegisterPage: React.FC = () => {
             maxWidth: '75vw',
           }}
           logo={<img alt="logo" style={{ height: '100%' }} src="/logo.svg" />}
-          title="鱼厂招聘系统 - 注册"
-          subTitle={'高效招聘、爽快求职'}
+          title="智星云课 - 注册"
+          subTitle={'一个助力智慧教育的课堂平台'}
           initialValues={{
             autoLogin: true,
           }}
@@ -141,6 +166,27 @@ const UserRegisterPage: React.FC = () => {
                   {
                     required: true,
                     message: '确认密码是必填项！',
+                  },
+                ]}
+              />
+              <ProFormText
+                name="captchaCode"
+                fieldProps={{
+                  size: 'large',
+                  placeholder: '请输入验证码',
+                  suffix: (
+                    <img
+                      src={captcha.image}
+                      alt="验证码"
+                      onClick={refreshCaptcha}
+                      style={{ height: 32, cursor: 'pointer', borderRadius: 4 }}
+                    />
+                  ),
+                }}
+                rules={[
+                  {
+                    required: true,
+                    message: '验证码是必填项！',
                   },
                 ]}
               />

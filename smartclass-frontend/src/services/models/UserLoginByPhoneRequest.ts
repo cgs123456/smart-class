@@ -5,5 +5,7 @@
 export type UserLoginByPhoneRequest = {
     userPassword?: string;
     userPhone?: string;
+    captchaUuid?: string;
+    captchaCode?: string;
 };
 

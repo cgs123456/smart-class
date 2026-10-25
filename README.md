@@ -33,6 +33,13 @@
   <img src="docs/screenshots/admin-user.png" width="320" alt="用户管理"/>
 </p>
 
+交互演示：
+
+<p>
+  <img src="docs/screenshots/mobile-home-like.gif" width="180" alt="每日单词点赞"/>
+  <img src="docs/screenshots/mobile-circle-interact.gif" width="180" alt="圈子点赞与收藏"/>
+</p>
+
 ## 快速开始（单体模式）
 
 环境要求：JDK 17、Maven 3.8+、Node ≥18、MySQL 8、Redis 7、Elasticsearch 8.15（可选，仅 AI 检索需要）。
@@ -85,6 +92,34 @@ docker exec sc-mysql mysql -uroot -p<mysql-password> smart_class \
 | `PAY_MOCK_ENABLED` | 否 | 模拟支付开关，默认 `false`（关闭时支付接口拒绝下单） |
 | `RAG_ENABLED` / `RAG_FULL_SYNC_ON_STARTUP` | 否 | ES 课程检索与启动全量同步，默认均 `false` |
 
+## 项目结构
+
+```
+smart class/
+├── smartclass-backend/               # 单体后端（Spring Boot 3.3，dev 端口 12345）
+│   ├── src/main/java/…/              # controller / service / mapper / manager / config 等
+│   ├── docker-compose.yml            # 单机生产编排（app + MySQL + Redis + ES）
+│   └── .env.example
+├── smartclass-backend-microservice/  # 微服务版（Dubbo3 + Nacos + Gateway，16 服务）
+├── smartclass-frontend/              # 移动端（Vue3 + Vant）
+├── smartclass-manage-frontend/       # 管理端（React18 + antd5 + UmiJS）
+├── smartclass-monorepo/              # 前端共享层 monorepo（pnpm + turbo）
+│   └── packages/                     # api（OpenAPI 生成）/ ui / config / shared / stores / styles
+├── docs/                             # 模块设计文档 + OpenAPI 生成指南 + 界面截图
+├── scripts/                          # 运维与验证脚本（OpenAPI 导出、会话消融）
+└── .github/workflows/ci-cd.yml       # CI：后端构建 + 测试
+```
+
+## 生产部署（Docker Compose）
+
+```bash
+cd smartclass-backend
+cp .env.example .env    # 填写 MYSQL_ROOT_PASSWORD / JWT_SECRET / CORS_ALLOWED_ORIGINS 等
+docker compose up -d    # 应用监听 8101，MySQL/Redis/ES 走内部网络不暴露宿主机
+```
+
+要点：应用以 `prod` profile 运行（knife4j 默认关闭）；`COOKIE_SECURE` 默认 `true`，需 HTTPS 前提；数据库凭据经 `MYSQL_USERNAME`/`MYSQL_PASSWORD` 注入，建议使用仅授权 `smart_class` 库的最小权限账号（Flyway 首次启动自动建表）；启用 ES 检索前需安装 IK 分词插件并置 `RAG_ENABLED=true`；反向代理需支持 SSE（`/api/chat/message/stream`）与 WebSocket 透传。
+
 ## 微服务模式（可选）
 
 `smartclass-backend-microservice` 提供 Dubbo3 + Nacos + Gateway 拆分版本（16 服务，网关 `8101`），与单体共享同一套数据库：
@@ -116,7 +151,7 @@ COS 对象存储用例未配置凭证时自动跳过。
 
 ## 更多文档
 
-[docs/](docs/)（模块设计、OpenAPI 客户端生成）· [项目优化评审报告.md](项目优化评审报告.md)（全量问题清单与修复实录，附录 A–K）
+[docs/](docs/)（模块设计、OpenAPI 客户端生成）· [CONTRIBUTING.md](CONTRIBUTING.md)（贡献指南）· [项目优化评审报告.md](项目优化评审报告.md)（全量问题清单与修复实录，附录 A–L）
 
 ## 许可证
 

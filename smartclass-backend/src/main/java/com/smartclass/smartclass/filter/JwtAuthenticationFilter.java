@@ -14,7 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -44,6 +47,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Resource
     private UserService userService;
+
+    /**
+     * Spring Security 6 默认 requireExplicitSave=true：过滤器里 setAuthentication 不会落库，
+     * SessionManagementFilter 会把每次请求都当作「本次新认证」而触发会话固定防护
+     * （ChangeSessionIdAuthenticationStrategy → changeSessionId → Redis 会话 key 被逐请求 RENAME），
+     * 并行请求互踩旧 id。显式经 repository 持久化 SPRING_SECURITY_CONTEXT 后，
+     * 后续请求 containsContext=true，策略不再触发，会话 id 全程稳定。
+     */
+    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -82,7 +94,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(sessionUser, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            // 显式持久化，杜绝 SessionManagementFilter 的逐请求会话 id 轮换（见字段注释）
+            this.securityContextRepository.saveContext(context, request, response);
         }
 
         // 4. 继续过滤器链，未登录请求由 SecurityConfig 决定是否放行

@@ -3002,6 +3002,8 @@ declare namespace API {
   };
 
   type UserLoginRequest = {
+    captchaCode?: string;
+    captchaUuid?: string;
     userAccount?: string;
     userPassword?: string;
   };
@@ -3029,6 +3031,8 @@ declare namespace API {
   };
 
   type UserRegisterRequest = {
+    captchaCode?: string;
+    captchaUuid?: string;
     checkPassword?: string;
     userAccount?: string;
     userPassword?: string;

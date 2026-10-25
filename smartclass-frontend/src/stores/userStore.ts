@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { UserControllerService } from '../services';
+import { OpenAPI } from '../services/core/OpenAPI';
+import { request as __request } from '../services/core/request';
 import type { LoginUserVO } from '../services';
 
 // 默认用户头像路径
@@ -60,11 +62,18 @@ export const useUserStore = defineStore('user', () => {
   };
 
   // 用户名登录
-  const login = async (userAccount: string, userPassword: string) => {
+  const login = async (
+    userAccount: string,
+    userPassword: string,
+    captchaUuid?: string,
+    captchaCode?: string,
+  ) => {
     try {
       const response = await UserControllerService.userLoginUsingPost({
         userAccount,
         userPassword,
+        captchaUuid,
+        captchaCode,
       });
 
       if (response.code === 0 && response.data) {
@@ -89,11 +98,18 @@ export const useUserStore = defineStore('user', () => {
   };
 
   // 手机号登录
-  const loginByPhone = async (userPhone: string, userPassword: string) => {
+  const loginByPhone = async (
+    userPhone: string,
+    userPassword: string,
+    captchaUuid?: string,
+    captchaCode?: string,
+  ) => {
     try {
       const response = await UserControllerService.userLoginByPhoneUsingPost({
         userPhone,
         userPassword,
+        captchaUuid,
+        captchaCode,
       });
 
       if (response.code === 0 && response.data) {
@@ -114,6 +130,37 @@ export const useUserStore = defineStore('user', () => {
         success: false,
         message: errorMessage,
       };
+    }
+  };
+
+  // 获取图形验证码（后端 captcha.enable=false 时返回 enabled=false）
+  const fetchCaptcha = async (): Promise<{
+    enabled: boolean;
+    uuid: string;
+    image: string;
+  }> => {
+    try {
+      const response = await __request<{
+        code: number;
+        data?: { uuid?: string; captchaImage?: string; captchaEnable?: string };
+      }>(OpenAPI, {
+        method: 'GET',
+        url: '/api/captcha',
+      });
+      if (response?.code === 0 && response.data) {
+        if (response.data.captchaEnable === 'false') {
+          return { enabled: false, uuid: '', image: '' };
+        }
+        return {
+          enabled: true,
+          uuid: response.data.uuid || '',
+          image: response.data.captchaImage || '',
+        };
+      }
+      return { enabled: true, uuid: '', image: '' };
+    } catch (error) {
+      console.error('Failed to fetch captcha', error);
+      return { enabled: true, uuid: '', image: '' };
     }
   };
 
@@ -142,6 +189,7 @@ export const useUserStore = defineStore('user', () => {
     userInfo,
     login,
     loginByPhone,
+    fetchCaptcha,
     logout,
     fetchCurrentUser,
     getUserAvatar,

@@ -62,6 +62,24 @@
           :rules="[{ required: true, message: '请确认密码' }]"
           label-width="80"
         />
+        <van-field
+          v-if="captchaEnabled"
+          v-model="captchaCode"
+          name="captcha"
+          label="验证码"
+          placeholder="请输入验证码"
+          :rules="[{ required: true, message: '请填写验证码' }]"
+          label-width="80"
+        >
+          <template #button>
+            <img
+              :src="captchaImage"
+              alt="验证码"
+              class="captcha-image"
+              @click="refreshCaptcha"
+            />
+          </template>
+        </van-field>
       </van-cell-group>
 
       <div class="form-actions">
@@ -86,14 +104,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { showToast } from 'vant';
 import { UserControllerService } from '../../services/services/UserControllerService';
+import { useUserStore } from '../../stores/userStore';
 import { BackButton } from '../../components/Common';
 
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore();
 
 const registerType = ref('account'); // 注册方式：account - 用户名注册，phone - 手机号注册
 const loading = ref(false);
@@ -105,6 +125,22 @@ const formData = ref({
   password: '',
   confirmPassword: '',
 });
+
+// 图形验证码（后端 /api/captcha，一次一用，失败或提交后需刷新）
+const captchaEnabled = ref(true);
+const captchaImage = ref('');
+const captchaUuid = ref('');
+const captchaCode = ref('');
+
+const refreshCaptcha = async () => {
+  const captcha = await userStore.fetchCaptcha();
+  captchaEnabled.value = captcha.enabled;
+  captchaImage.value = captcha.image;
+  captchaUuid.value = captcha.uuid;
+  captchaCode.value = '';
+};
+
+onMounted(refreshCaptcha);
 
 const validateForm = () => {
   // 表单验证
@@ -142,14 +178,20 @@ const handleRegister = async () => {
     if (registerType.value === 'account') {
       response = await UserControllerService.userRegisterUsingPost({
         userAccount: formData.value.userAccount,
+        userName: formData.value.nickname,
         userPassword: formData.value.password,
         checkPassword: formData.value.confirmPassword,
+        captchaUuid: captchaUuid.value,
+        captchaCode: captchaCode.value,
       });
     } else {
       response = await UserControllerService.userRegisterByPhoneUsingPost({
         userPhone: formData.value.userPhone,
+        userName: formData.value.nickname,
         userPassword: formData.value.password,
         checkPassword: formData.value.confirmPassword,
+        captchaUuid: captchaUuid.value,
+        captchaCode: captchaCode.value,
       });
     }
 
@@ -166,12 +208,15 @@ const handleRegister = async () => {
         type: 'fail',
         message: response.message || '注册失败',
       });
+      // 验证码一次一用，失败后刷新以便重试
+      refreshCaptcha();
     }
   } catch (error) {
     showToast({
       type: 'fail',
       message: error.message || '注册失败，请检查网络连接',
     });
+    refreshCaptcha();
   } finally {
     loading.value = false;
   }
@@ -271,6 +316,12 @@ const handleRegister = async () => {
 
 .register-tabs {
   margin-bottom: 16px;
+}
+
+.captcha-image {
+  height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 :deep(.van-tabs__line) {

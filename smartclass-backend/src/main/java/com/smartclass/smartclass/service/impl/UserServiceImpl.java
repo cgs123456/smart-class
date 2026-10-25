@@ -91,12 +91,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final ConcurrentHashMap<String, Object> registerLockMap = new ConcurrentHashMap<>();
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword, String captchaUuid, String captchaCode) {
+    public long userRegister(String userAccount, String userName, String userPassword, String checkPassword, String captchaUuid, String captchaCode) {
         // 0. 验证码校验
         validateCaptcha(captchaUuid, captchaCode);
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (userName != null && userName.length() > 30) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "昵称过长");
         }
         if (userAccount.length() < 4) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
@@ -126,6 +129,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 // 3. 插入数据
                 User user = new User();
                 user.setUserAccount(userAccount);
+                user.setUserName(StringUtils.isNotBlank(userName) ? userName : null);
                 user.setUserPassword(encryptPassword);
                 boolean saveResult = this.save(user);
                 if (!saveResult) {
@@ -145,12 +149,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public long userRegisterByPhone(String userPhone, String userPassword, String checkPassword, String captchaUuid, String captchaCode) {
+    public long userRegisterByPhone(String userPhone, String userName, String userPassword, String checkPassword, String captchaUuid, String captchaCode) {
         // 0. 验证码校验
         validateCaptcha(captchaUuid, captchaCode);
         // 1. 校验
         if (StringUtils.isAnyBlank(userPhone, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (userName != null && userName.length() > 30) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "昵称过长");
         }
         if (!userPhone.matches("^1[3-9]\\d{9}$")) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号格式错误");
@@ -202,6 +209,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 User user = new User();
                 user.setUserAccount(userAccount);
                 user.setUserPhone(userPhone);
+                user.setUserName(StringUtils.isNotBlank(userName) ? userName : null);
                 user.setUserPassword(encryptPassword);
                 boolean saveResult = this.save(user);
                 if (!saveResult) {

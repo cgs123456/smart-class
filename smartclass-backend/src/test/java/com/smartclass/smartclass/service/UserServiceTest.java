@@ -20,12 +20,12 @@ public class UserServiceTest {
     void userRegisterRejectsInvalidInput() {
         // 验证码缺失在第一道校验即被拒绝
         Assertions.assertThrows(BusinessException.class, () ->
-                userService.userRegister("testuser", "", "123456", null, null));
+                userService.userRegister("testuser", null, "", "123456", null, null));
         // 账号过短
         Assertions.assertThrows(BusinessException.class, () ->
-                userService.userRegister("te", "12345678", "12345678", null, null));
+                userService.userRegister("te", null, "12345678", "12345678", null, null));
         // 两次密码不一致
         Assertions.assertThrows(BusinessException.class, () ->
-                userService.userRegister("testuser2", "12345678", "87654321", null, null));
+                userService.userRegister("testuser2", null, "12345678", "87654321", null, null));
     }
 }

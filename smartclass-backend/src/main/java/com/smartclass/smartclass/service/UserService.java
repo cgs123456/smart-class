@@ -23,25 +23,27 @@ public interface UserService extends IService<User> {
      * 用户注册
      *
      * @param userAccount   用户账户
+     * @param userName      用户昵称（可选）
      * @param userPassword  用户密码
      * @param checkPassword 校验密码
      * @param captchaUuid   验证码UUID
      * @param captchaCode   验证码
      * @return 新用户 id
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword, String captchaUuid, String captchaCode);
+    long userRegister(String userAccount, String userName, String userPassword, String checkPassword, String captchaUuid, String captchaCode);
 
     /**
      * 用户手机号注册
      *
      * @param userPhone     用户手机号
+     * @param userName      用户昵称（可选）
      * @param userPassword  用户密码
      * @param checkPassword 校验密码
      * @param captchaUuid   验证码UUID
      * @param captchaCode   验证码
      * @return 新用户 id
      */
-    long userRegisterByPhone(String userPhone, String userPassword, String checkPassword, String captchaUuid, String captchaCode);
+    long userRegisterByPhone(String userPhone, String userName, String userPassword, String checkPassword, String captchaUuid, String captchaCode);
 
     /**
      * 用户登录

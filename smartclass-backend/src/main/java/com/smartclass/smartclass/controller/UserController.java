@@ -53,6 +53,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
         throw new BusinessException(ErrorCode.PARAMS_ERROR);
     }
     String userAccount = userRegisterRequest.getUserAccount();
+    String userName = userRegisterRequest.getUserName();
     String userPassword = userRegisterRequest.getUserPassword();
     String checkPassword = userRegisterRequest.getCheckPassword();
     String captchaUuid = userRegisterRequest.getCaptchaUuid();
@@ -60,7 +61,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
     if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
         throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
     }
-    long result = userService.userRegister(userAccount, userPassword, checkPassword, captchaUuid, captchaCode);
+    long result = userService.userRegister(userAccount, userName, userPassword, checkPassword, captchaUuid, captchaCode);
     return ResultUtils.success(result);
 }
 
@@ -76,6 +77,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
            throw new BusinessException(ErrorCode.PARAMS_ERROR);
        }
        String userPhone = userRegisterByPhoneRequest.getUserPhone();
+       String userName = userRegisterByPhoneRequest.getUserName();
        String userPassword = userRegisterByPhoneRequest.getUserPassword();
        String checkPassword = userRegisterByPhoneRequest.getCheckPassword();
        String captchaUuid = userRegisterByPhoneRequest.getCaptchaUuid();
@@ -83,7 +85,7 @@ public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegi
        if (StringUtils.isAnyBlank(userPhone, userPassword, checkPassword)) {
            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
        }
-       long result = userService.userRegisterByPhone(userPhone, userPassword, checkPassword, captchaUuid, captchaCode);
+       long result = userService.userRegisterByPhone(userPhone, userName, userPassword, checkPassword, captchaUuid, captchaCode);
        return ResultUtils.success(result);
    }
 

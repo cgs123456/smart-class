@@ -14,6 +14,8 @@ public class UserRegisterByPhoneRequest implements Serializable {
 
     private String userPhone;
 
+    private String userName;
+
     private String userPassword;
 
     private String checkPassword;

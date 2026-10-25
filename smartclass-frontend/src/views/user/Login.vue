@@ -56,6 +56,24 @@
             label-width="60"
           />
         </template>
+        <van-field
+          v-if="captchaEnabled"
+          v-model="captchaCode"
+          name="captcha"
+          label="验证码"
+          placeholder="请输入验证码"
+          :rules="[{ required: true, message: '请填写验证码' }]"
+          label-width="60"
+        >
+          <template #button>
+            <img
+              :src="captchaImage"
+              alt="验证码"
+              class="captcha-image"
+              @click="refreshCaptcha"
+            />
+          </template>
+        </van-field>
       </van-cell-group>
 
       <div class="form-actions">
@@ -83,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast } from 'vant';
 import { useUserStore } from '../../stores/userStore';
@@ -100,6 +118,22 @@ const formData = ref({
   password: '',
 });
 
+// 图形验证码（后端 /api/captcha，一次一用，失败或提交后需刷新）
+const captchaEnabled = ref(true);
+const captchaImage = ref('');
+const captchaUuid = ref('');
+const captchaCode = ref('');
+
+const refreshCaptcha = async () => {
+  const captcha = await userStore.fetchCaptcha();
+  captchaEnabled.value = captcha.enabled;
+  captchaImage.value = captcha.image;
+  captchaUuid.value = captcha.uuid;
+  captchaCode.value = '';
+};
+
+onMounted(refreshCaptcha);
+
 const onSubmit = async () => {
   loading.value = true;
   try {
@@ -110,12 +144,16 @@ const onSubmit = async () => {
       result = await userStore.login(
         formData.value.userAccount,
         formData.value.password,
+        captchaUuid.value,
+        captchaCode.value,
       );
     } else {
       // 手机号登录
       result = await userStore.loginByPhone(
         formData.value.userPhone,
         formData.value.password,
+        captchaUuid.value,
+        captchaCode.value,
       );
     }
 
@@ -134,12 +172,15 @@ const onSubmit = async () => {
         type: 'fail',
         message: result.message || '登录失败',
       });
+      // 验证码一次一用，失败后刷新以便重试
+      refreshCaptcha();
     }
   } catch (error) {
     showToast({
       type: 'fail',
       message: error.message || '登录失败，请检查网络连接',
     });
+    refreshCaptcha();
   } finally {
     loading.value = false;
   }
@@ -215,6 +256,12 @@ const onSubmit = async () => {
 
 .login-tabs {
   margin-bottom: 16px;
+}
+
+.captcha-image {
+  height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 :deep(.van-tabs__line) {

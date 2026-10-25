@@ -6,5 +6,8 @@ export type UserRegisterByPhoneRequest = {
     checkPassword?: string;
     userPassword?: string;
     userPhone?: string;
+    userName?: string;
+    captchaUuid?: string;
+    captchaCode?: string;
 };
 
