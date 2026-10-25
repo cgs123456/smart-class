@@ -8,7 +8,23 @@
       <!-- 课程分类标签 -->
       <van-tabs v-model:active="activeCategory" sticky swipeable>
         <van-tab title="全部">
+          <!-- 首屏骨架 -->
+          <div v-if="loading" class="course-skeleton">
+            <div v-for="n in 4" :key="n" class="course-skeleton__row">
+              <van-skeleton title :row="2" round class="course-skeleton__item" />
+            </div>
+          </div>
+          <!-- 空态 -->
+          <van-empty
+            v-else-if="displayedCourses.length === 0"
+            description="暂无课程内容"
+          >
+            <van-button round size="small" type="primary" class="empty-retry-btn" @click="loadCourses">
+              重新加载
+            </van-button>
+          </van-empty>
           <course-list
+            v-else
             title="推荐课程"
             :courses="displayedCourses"
             class-name="recommended"
@@ -20,7 +36,12 @@
           :key="category.id"
           :title="category.name"
         >
+          <van-empty
+            v-if="!loading && displayedCourses.length === 0"
+            :description="`${category.name}分类暂无课程`"
+          />
           <course-list
+            v-else
             :title="category.name + '课程'"
             :courses="displayedCourses"
             class-name="category-courses"
@@ -43,7 +64,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { showToast } from 'vant';
 import { CourseList, CourseDetail } from '../../components/Course';
 import { BackButton } from '../../components/Common';
 import {
@@ -175,8 +195,8 @@ const loadCourses = async () => {
       icon: category.icon,
     }));
   } catch (error) {
+    // 网络异常与系统级错误已由 request.ts 拦截器统一 toast，这里仅记录
     console.error('加载课程数据失败:', error);
-    showToast('数据加载失败，请重试');
   } finally {
     loading.value = false;
   }
@@ -220,6 +240,19 @@ onMounted(() => {
 
 :deep(.van-tabs) {
   background: #fff;
+}
+
+.course-skeleton {
+  padding: 16px;
+}
+
+.course-skeleton__row {
+  margin-bottom: 16px;
+}
+
+.empty-retry-btn {
+  margin-top: 8px;
+  padding: 0 24px;
 }
 
 :deep(.van-sticky--fixed) {

@@ -151,6 +151,20 @@ onMounted(async () => {
 /* 优先使用系统字体，避免 Google Fonts CDN 在国内访问受阻 */
 /* @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap'); */
 
+/* 统一设计语言：Vant 主题变量收敛为单一调色点，全应用组件自动继承 */
+:root {
+  --smartclass-primary: #1989fa;
+  --smartclass-success: #07c160;
+  --smartclass-danger: #ee0a24;
+  --smartclass-radius: 8px;
+  --van-primary-color: var(--smartclass-primary);
+  --van-success-color: var(--smartclass-success);
+  --van-danger-color: var(--smartclass-danger);
+  --van-radius-md: var(--smartclass-radius);
+  --van-radius-lg: var(--smartclass-radius);
+  --van-radius-max: 999px;
+}
+
 body {
   margin: 0;
   padding: 0;

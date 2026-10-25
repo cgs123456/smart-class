@@ -5,6 +5,7 @@
 import axios from 'axios';
 import type { AxiosError, AxiosRequestConfig, AxiosResponse, AxiosInstance } from 'axios';
 
+import { showFailToast } from 'vant';
 import { ApiError } from './ApiError';
 import type { ApiRequestOptions } from './ApiRequestOptions';
 import type { ApiResult } from './ApiResult';
@@ -27,16 +28,42 @@ const handleUnauthorized = () => {
     }
 };
 
+// 统一的用户可见错误提示：系统级错误(>=50000)与网络异常弹 toast，
+// 业务空态码(40400 等)保持静默由页面渲染空状态；1s 内同文案去重防止连发轰炸。
+let lastToastMessage = '';
+let lastToastAt = 0;
+const notifyUser = (message: string) => {
+    const now = Date.now();
+    if (message === lastToastMessage && now - lastToastAt < 1000) {
+        return;
+    }
+    lastToastMessage = message;
+    lastToastAt = now;
+    showFailToast(message);
+};
+
 axios.interceptors.response.use(
     (response) => {
         if (response.data && response.data.code === 40100) {
             handleUnauthorized();
+        }
+        // 后端约定 HTTP 200 + BaseResponse{code,message,data}；系统级错误集中提示
+        if (
+            response.data &&
+            typeof response.data.code === 'number' &&
+            response.data.code >= 50000 &&
+            isStringWithValue(response.data.message)
+        ) {
+            notifyUser(response.data.message);
         }
         return response;
     },
     (error) => {
         if (error?.response?.status === 401) {
             handleUnauthorized();
+        } else if (!error?.response && !axios.isCancel(error)) {
+            // 网络层失败（超时/断网/DNS），请求根本没到服务器
+            notifyUser('网络异常，请检查网络后重试');
         }
         return Promise.reject(error);
     },

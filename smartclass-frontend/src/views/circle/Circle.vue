@@ -36,7 +36,13 @@
           <div class="tab-content">
             <!-- 推荐内容 -->
             <div v-show="activeTab === 'recommend'" class="tab-pane">
-              <div v-if="posts.length === 0" class="empty-state">
+              <!-- 首屏骨架：首批数据到达前不误显示"暂无内容" -->
+              <div v-if="firstLoading" class="post-skeleton">
+                <div v-for="n in 3" :key="n" class="post-skeleton__card">
+                  <van-skeleton title :row="3" round />
+                </div>
+              </div>
+              <div v-else-if="posts.length === 0" class="empty-state">
                 <van-empty description="暂无内容" />
               </div>
               <div v-else>
@@ -211,6 +217,8 @@ const currentPostId = ref<number | null>(null);
 const currentComments = ref<Comment[]>([]);
 const posts = ref<ExtendedPostVO[]>([]); // 使用扩展的类型
 const loading = ref(false);
+// 首屏加载态：首批帖子到达前展示骨架，与翻页 loading（滚动加载）区分
+const firstLoading = ref(true);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const hasMore = ref(true);
@@ -346,6 +354,7 @@ const fetchPosts = async (reset = false) => {
   } finally {
     loading.value = false;
     refreshing.value = false;
+    firstLoading.value = false;
   }
 };
 
@@ -766,6 +775,17 @@ onMounted(async () => {
 
 .tab-pane {
   min-height: 400px;
+}
+
+.post-skeleton {
+  padding: 12px 16px;
+}
+
+.post-skeleton__card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
 }
 
 .empty-state {
