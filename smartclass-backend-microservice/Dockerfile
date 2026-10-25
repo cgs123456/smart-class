@@ -16,14 +16,10 @@ ARG SERVICE_DIR
 
 WORKDIR /workspace
 
-# 先拷贝父 pom 与公共模块，利用 Docker 层缓存加速依赖解析
-COPY pom.xml ./
-COPY smartclass-backend-common ./smartclass-backend-common
-COPY smartclass-backend-model ./smartclass-backend-model
-COPY smartclass-backend-service-client ./smartclass-backend-service-client
-
-# 拷贝目标服务源码
-COPY ${SERVICE_DIR} ./${SERVICE_DIR}
+# 拷贝整个多模块工程：根 pom 的 <modules> 声明了全部 16 个模块，
+# -pl ${SERVICE_DIR} -am 的反应堆要求这些子模块目录真实存在，不能只拷目标服务。
+# 产物体积由 .dockerignore 排除 target/ 控制。
+COPY . .
 
 # 仅构建目标服务（跳过测试以加速构建）
 RUN mvn -B clean package -pl ${SERVICE_DIR} -am -DskipTests
